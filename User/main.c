@@ -12,6 +12,7 @@
 #include "index.h"
 #include "esp8266.h"
 #include "uart2.h"
+#include "uart3.h"
 #include "light.h"
 #include "rtc_date.h"
 #include "PM25.h"
@@ -27,11 +28,13 @@ extern uint8_t PM25_ON;
 static TaskHandle_t Menu_handle = NULL;
 static TaskHandle_t Key_handle = NULL;
 static TaskHandle_t ESP8266_handle = NULL;
+static TaskHandle_t Bluetooth_handle = NULL;
 
 /* 任务函数声明 */
 static void Menu_Main_Task(void *pvParameters);
 static void Key_Main_Task(void *pvParameters);
 static void ESP8266_Main_Task(void *pvParameters);
+static void Bluetooth_Main_Task(void *pvParameters);
 
 int main(void)
 {
@@ -49,6 +52,10 @@ int main(void)
 
     // 初始化UART2，用于ESP8266通信
     UART2_DMA_RX_Init(115200);
+    
+    // 初始化UART3（用于蓝牙通信）
+    My_USART3_Init();
+    printf("UART3 (Bluetooth) initialization complete\r\n");
 
     BEEP_Buzz(10);
 
@@ -63,6 +70,14 @@ int main(void)
     printf("||     fengwuheng   \t\t||\r\n");
     printf("||     v1.0.0   \t\t||\r\n");
     printf("=====================================\r\n");
+    // 读取设备ID寄存器
+  uint32_t device_id = *(uint32_t*)0xE0042000;
+
+  // 读取Flash大小寄存器 (0x1FFFF7E22)
+  uint16_t flash_size = *((uint16_t*)0x1FFFF7E0);
+
+  printf("Device ID: 0x%08X\n", device_id);
+  printf("Flash Size: %d KB\n", flash_size);
     Light_ADC_Init();
     printf("Light_ADC_Init OK\n");
 
@@ -106,6 +121,14 @@ int main(void)
                 (UBaseType_t)4,                 /* 任务优先级 */
                 (TaskHandle_t *)&Menu_handle);  /* 任务控制句柄 */
     xTaskCreate(Key_Main_Task, "KeyMain", 96, NULL, 4, &Key_handle);
+    
+    // 创建蓝牙数据处理任务
+    xTaskCreate((TaskFunction_t)Bluetooth_Main_Task,
+                (const char *)"Bluetooth_Main",
+                (uint16_t)384,
+                (void *)NULL,
+                (UBaseType_t)3,
+                (TaskHandle_t *)&Bluetooth_handle);
 
     printf("creat task OK\n");
 
@@ -116,13 +139,13 @@ int main(void)
     // 打印传感器初始状态
     printf("Initial sensor states: DHT11=%d, Light=%d, PM25=%d\n", DHT11_ON, Light_ON, PM25_ON);
 
-    // 创建ESP8266任务
-    xTaskCreate((TaskFunction_t)ESP8266_Main_Task, /* 任务函数 */
-                (const char *)"ESP8266_Main",      /* 任务名称 */
-                (uint16_t)384,                     /* 任务堆栈大小 */
-                (void *)NULL,                      /* 任务参数 */
-                (UBaseType_t)2,                    /* 任务优先级 */
-                (TaskHandle_t *)&ESP8266_handle);  /* 任务句柄 */
+    // // 创建ESP8266任务
+    // xTaskCreate((TaskFunction_t)ESP8266_Main_Task, /* 任务函数 */
+    //             (const char *)"ESP8266_Main",      /* 任务名称 */
+    //             (uint16_t)384,                     /* 任务堆栈大小 */
+    //             (void *)NULL,                      /* 任务参数 */
+    //             (UBaseType_t)2,                    /* 任务优先级 */
+    //             (TaskHandle_t *)&ESP8266_handle);  /* 任务句柄 */
 
     // 添加调试信息，确认调度器启动
     printf("Starting scheduler...\n");
@@ -144,8 +167,16 @@ static void Menu_Main_Task(void *pvParameters)
 
 static void Key_Main_Task(void *pvParameters)
 {
-    // 直接调用统一菜单框架的按键任务
+    // 直接调用统一菜单功能的按键处理
     menu_key_task(pvParameters);
+}
+
+static void Bluetooth_Main_Task(void *pvParameters)
+{
+    printf("Bluetooth_Main_Task start ->\n");
+    
+    // 直接调用蓝牙处理任务
+    Bluetooth_Process_Task(pvParameters);
 }
 
 static void ESP8266_Main_Task(void *pvParameters)
