@@ -54,8 +54,8 @@ int main(void)
     UART2_DMA_RX_Init(115200);
     
     // 初始化UART3（用于蓝牙通信）
-    My_USART3_Init();
-    printf("UART3 (Bluetooth) initialization complete\r\n");
+    UART3_DMA_RX_Init(115200);
+    printf("UART3 (Bluetooth) DMA+IDLE initialization complete\r\n");
 
     BEEP_Buzz(10);
 

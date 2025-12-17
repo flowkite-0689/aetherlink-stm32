@@ -1,18 +1,15 @@
-#include "stm32f10x.h"
 #include "uart3.h"
 #include <stdio.h>
 #include <string.h>
 #include "FreeRTOS.h"
-#include "queue.h"
+#include "task.h"
 
 // 全局接收缓冲区
-uart3_buffer_t uart3_rx_buffer = {0};
+uint8_t uart3_buffer[UART3_BUF_SIZE];
+uint8_t uart3_rx_len;
 
 // 蓝牙命令回调函数
 static bluetooth_cmd_callback_t g_bluetooth_callback = NULL;
-
-// 任务句柄（全局）
-TaskHandle_t bluetooth_task_handle = NULL;
 
 // 简单的大小写不敏感字符串比较函数
 static int strcasecmp(const char *s1, const char *s2)
@@ -42,194 +39,208 @@ static int strcasecmp(const char *s1, const char *s2)
     return c1 - c2;
 }
 
-// 清理数据，移除不可见字符
-static uint16_t clean_buffer(uint8_t* buffer, uint16_t len)
+/**
+ * @brief  GPIO初始化，PB10=TX3，PB11=RX3
+ */
+void UART3_GPIO_Init(void)
 {
-    uint16_t read_pos = 0;
-    uint16_t write_pos = 0;
+    GPIO_InitTypeDef GPIO_InitStruct;
     
-    while (read_pos < len)
-    {
-        uint8_t ch = buffer[read_pos];
-        
-        // 只保留可打印字符 (32-126) 和常见的控制字符
-        if ((ch >= 32 && ch <= 126) || ch == '\r' || ch == '\n' || ch == '\t')
-        {
-            buffer[write_pos++] = ch;
-        }
-        
-        read_pos++;
-    }
+    // 使能GPIOB时钟
+    RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB, ENABLE);
     
-    return write_pos;
+    // PB10(TX3) 复用推挽输出
+    GPIO_InitStruct.GPIO_Pin = GPIO_Pin_10;
+    GPIO_InitStruct.GPIO_Mode = GPIO_Mode_AF_PP;
+    GPIO_InitStruct.GPIO_Speed = GPIO_Speed_50MHz;
+    GPIO_Init(GPIOB, &GPIO_InitStruct);
+    
+    // PB11(RX3) 浮空输入
+    GPIO_InitStruct.GPIO_Pin = GPIO_Pin_11;
+    GPIO_InitStruct.GPIO_Mode = GPIO_Mode_IN_FLOATING;
+    GPIO_Init(GPIOB, &GPIO_InitStruct);
 }
 
-void My_USART3_Init(void)  
-{  
-    GPIO_InitTypeDef GPIO_InitStruct;  
-    USART_InitTypeDef USART_InitStruct;  
-    NVIC_InitTypeDef NVIC_InitStruct;  
+/**
+ * @brief  UART3初始化，使能RXNE中断（用于测试）
+ * @param  baudrate: 波特率（如9600、115200等）
+ */
+void UART3_Init(uint32_t baudrate)
+{
+    USART_InitTypeDef USART_InitStruct;
+    NVIC_InitTypeDef NVIC_InitStruct;
     
-    // 1. 使能 GPIOB 和 USART3 时钟
-    RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB, ENABLE);   // GPIOB 在 APB2
-    RCC_APB1PeriphClockCmd(RCC_APB1Periph_USART3, ENABLE);  // ⚠️ USART3 在 APB1！关键！
-
-    // 2. 配置 PB10 为复用推挽输出（TX）
-    GPIO_InitStruct.GPIO_Mode = GPIO_Mode_AF_PP;
-    GPIO_InitStruct.GPIO_Pin = GPIO_Pin_10;
-    GPIO_InitStruct.GPIO_Speed = GPIO_Speed_10MHz;
-    GPIO_Init(GPIOB, &GPIO_InitStruct);
-
-    // 3. 配置 PB11 为浮空输入（RX）
-    GPIO_InitStruct.GPIO_Mode = GPIO_Mode_IN_FLOATING;
-    GPIO_InitStruct.GPIO_Pin = GPIO_Pin_11;
-    GPIO_Init(GPIOB, &GPIO_InitStruct);
-
-    // 4. 配置 USART3 参数
-    USART_InitStruct.USART_BaudRate = 115200;
-    USART_InitStruct.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
-    USART_InitStruct.USART_Mode = USART_Mode_Tx | USART_Mode_Rx;
-    USART_InitStruct.USART_Parity = USART_Parity_No;
-    USART_InitStruct.USART_StopBits = USART_StopBits_1;
-    USART_InitStruct.USART_WordLength = USART_WordLength_8b;
+    // 1. 使能UART3时钟
+    RCC_APB1PeriphClockCmd(RCC_APB1Periph_USART3, ENABLE);
+    
+    // 2. UART配置
+    USART_InitStruct.USART_BaudRate = baudrate;
+    USART_InitStruct.USART_WordLength = USART_WordLength_8b; // 8位数据位
+    USART_InitStruct.USART_StopBits = USART_StopBits_1;      // 1位停止位
+    USART_InitStruct.USART_Parity = USART_Parity_No;         // 无校验
+    USART_InitStruct.USART_HardwareFlowControl = USART_HardwareFlowControl_None; // 无硬件流控
+    USART_InitStruct.USART_Mode = USART_Mode_Rx | USART_Mode_Tx; // 收发模式
     USART_Init(USART3, &USART_InitStruct);
-
-    // 5. 使能 USART3
+    
+    // 3. 使能UART3
     USART_Cmd(USART3, ENABLE);
-
-    // 6. 使能接收中断
+    
+    // 4. 暂时使用RXNE中断进行测试
     USART_ITConfig(USART3, USART_IT_RXNE, ENABLE);
-
-    // 7. 配置 NVIC 中断优先级（抢占=1，子优先级=1）
-    NVIC_InitStruct.NVIC_IRQChannel = USART3_IRQn;         // ⚠️ 改为 USART3_IRQn
-    NVIC_InitStruct.NVIC_IRQChannelPreemptionPriority = 1;
-    NVIC_InitStruct.NVIC_IRQChannelSubPriority = 1;
+    
+    // 5. 配置UART3中断优先级（NVIC配置）
+    NVIC_InitStruct.NVIC_IRQChannel = USART3_IRQn;
+    NVIC_InitStruct.NVIC_IRQChannelPreemptionPriority = 5; // 抢占优先级5
+    NVIC_InitStruct.NVIC_IRQChannelSubPriority = 0;        // 子优先级0
     NVIC_InitStruct.NVIC_IRQChannelCmd = ENABLE;
     NVIC_Init(&NVIC_InitStruct);
-}  
-
-// 8. 中断服务函数（必须与启动文件中的向量表名一致！）
-void USART3_IRQHandler(void)  
-{  
-    uint8_t res;  
-    BaseType_t xHigherPriorityTaskWoken = pdFALSE;
     
-    if (USART_GetITStatus(USART3, USART_IT_RXNE) != RESET)  
-    {  
-        res = USART_ReceiveData(USART3);  
+    // 6. 调试信息
+    printf("UART3 Initialized: Baud=%d, RXNE_IRQ=ENABLED (test mode)\r\n", baudrate);
+}
+
+/**
+ * @brief  DMA初始化，UART3_RX -> 循环模式
+ */
+void UART3_DMA_Init(void)
+{
+    DMA_InitTypeDef DMA_InitStruct;
+    
+    // 1. 使能DMA2时钟（UART3_RX对应DMA2_Channel2）
+    RCC_AHBPeriphClockCmd(RCC_AHBPeriph_DMA2, ENABLE);
+    
+    // 2. 复位DMA2_Channel2，等待配置完成
+    DMA_DeInit(DMA2_Channel2);
+    
+    // 3. 先配置为8位数据模式，确保数据正确接收
+    DMA_InitStruct.DMA_PeripheralBaseAddr = (uint32_t)&USART3->DR; // 外设地址：UART3数据寄存器
+    DMA_InitStruct.DMA_MemoryBaseAddr = (uint32_t)uart3_buffer;    // 内存地址：接收缓冲区
+    DMA_InitStruct.DMA_DIR = DMA_DIR_PeripheralSRC;                // 数据方向：外设->内存
+    DMA_InitStruct.DMA_BufferSize = UART3_BUF_SIZE;                 // 缓冲区大小：128字节
+    DMA_InitStruct.DMA_PeripheralInc = DMA_PeripheralInc_Disable;  // 外设地址不递增
+    DMA_InitStruct.DMA_MemoryInc = DMA_MemoryInc_Enable;           // 内存地址递增
+    DMA_InitStruct.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Byte; // 外设数据宽度：字节
+    DMA_InitStruct.DMA_MemoryDataSize = DMA_MemoryDataSize_Byte;   // 内存数据宽度：字节
+    DMA_InitStruct.DMA_Mode = DMA_Mode_Circular;                   // 循环模式（重复使用）
+    DMA_InitStruct.DMA_Priority = DMA_Priority_Medium;             // 中等优先级
+    DMA_InitStruct.DMA_M2M = DMA_M2M_Disable;                      // 禁止内存到内存
+    
+    DMA_Init(DMA2_Channel2, &DMA_InitStruct);
+    
+    // 4. 使能DMA2_Channel2
+    DMA_Cmd(DMA2_Channel2, ENABLE);
+    
+    // 5. 使能UART3的DMA接收
+    USART_DMACmd(USART3, USART_DMAReq_Rx, ENABLE);
+    
+    // 6. 清空缓冲区，初始化接收长度
+    memset(uart3_buffer, 0, UART3_BUF_SIZE);
+    uart3_rx_len = 0;
+    
+    // 7. 调试信息
+    printf("UART3 DMA Initialized: Channel2, Size=%d\r\n", UART3_BUF_SIZE);
+}
+
+/**
+ * @brief  UART3中断服务函数（RXNE中断测试）
+ */
+void USART3_IRQHandler(void)
+{
+    uint32_t temp;
+    
+    // 检查是否是RXNE中断（接收数据寄存器非空）
+    if(USART_GetITStatus(USART3, USART_IT_RXNE) != RESET)
+    {
+        // 读取接收到的数据
+        uint8_t rx_data = USART_ReceiveData(USART3);
         
-        // 调试输出：显示接收到的字节
-        printf("IRQ RX: 0x%02X ('%c'), buffer_count=%d\r\n", 
-               res, (res >= 32 && res <= 126) ? res : '.', uart3_rx_buffer.count);
-        
-        // 将数据存入环形缓冲区
-        uint16_t next_head = (uart3_rx_buffer.head + 1) % UART3_RX_BUFFER_SIZE;
-        
-        if (next_head != uart3_rx_buffer.tail) 
+        // 存储到缓冲区（防止溢出）
+        static uint16_t rx_index = 0;
+        if(rx_index < UART3_BUF_SIZE - 1)
         {
-            uart3_rx_buffer.buffer[uart3_rx_buffer.head] = res;
-            uart3_rx_buffer.head = next_head;
-            uart3_rx_buffer.count++;
-            
-            // 检查是否收到完整命令（以\r\n结尾）
-            if (res == '\n') 
-            {
-                uart3_rx_buffer.data_ready = 1;
-                printf("Command ready, notifying task\r\n");
-                
-                // 关键：通知蓝牙任务有数据到达
-                if (bluetooth_task_handle != NULL)
-                {
-                    vTaskNotifyGiveFromISR(bluetooth_task_handle, &xHigherPriorityTaskWoken);
-                    printf("Task notification sent\r\n");
-                }
-                else
-                {
-                    printf("Bluetooth task handle is NULL!\r\n");
-                }
-            }
+            uart3_buffer[rx_index] = rx_data;
+            rx_index++;
+            uart3_rx_len = rx_index;
         }
-        else
+        
+        printf("RXNE: 0x%02X ('%c')\r\n", rx_data, 
+               (rx_data >= 32 && rx_data <= 126) ? rx_data : '.');
+        
+        // 检查是否收到完整命令（\r\n）
+        if(rx_data == '\n' || rx_data == '\r')
         {
-            // 缓冲区溢出处理
-            printf("UART3 RX Buffer Overflow!\r\n");
+            if(rx_index > 1) // 至少有数据才处理
+            {
+                uart3_buffer[rx_index-1] = '\0'; // 替换\r\n为字符串结束符
+                printf("Command complete: '%s' (len=%d)\r\n", 
+                       uart3_buffer, rx_index-1);
+                rx_index = 0; // 重置索引
+            }
+            else
+            {
+                rx_index = 0; // 重置索引
+            }
         }
         
         USART_ClearITPendingBit(USART3, USART_IT_RXNE);
     }
     
-    // 如果需要任务切换
-    portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
-}  
-
-// 读取数据从缓冲区
-uint16_t UART3_Read_Data(uint8_t* data, uint16_t len)
-{
-    uint16_t read_count = 0;
-    
-    taskENTER_CRITICAL();
-    while (read_count < len && uart3_rx_buffer.count > 0)
+    // 检测是否是空闲中断（保留DMA功能）
+    else if(USART_GetITStatus(USART3, USART_IT_IDLE) != RESET)
     {
-        data[read_count] = uart3_rx_buffer.buffer[uart3_rx_buffer.tail];
-        uart3_rx_buffer.tail = (uart3_rx_buffer.tail + 1) % UART3_RX_BUFFER_SIZE;
-        uart3_rx_buffer.count--;
-        read_count++;
+        // 清除IDLE中断标志
+        temp = USART3->SR;
+        temp = USART3->DR;
+        (void)temp;
+        
+        printf("IDLE interrupt detected\r\n");
     }
-    taskEXIT_CRITICAL();
+}
+
+/**
+ * @brief  初始化接收（测试模式）
+ */
+void UART3_DMA_RX_Init(uint32_t baudrate)
+{
+    UART3_GPIO_Init();    // GPIO初始化
+    UART3_Init(baudrate); // UART初始化（使用RXNE中断测试）
+    // 暂时禁用DMA，先测试基本UART功能
+    // UART3_DMA_Init();     // DMA初始化
     
-    return read_count;
+    // 清空缓冲区
+    memset(uart3_buffer, 0, UART3_BUF_SIZE);
+    uart3_rx_len = 0;
+    
+    printf("UART3 Test Mode: RXNE interrupt enabled\r\n");
 }
 
-// 获取可用数据量
-uint16_t UART3_Get_Available_Data(void)
+/**
+ * @brief  轮询式发送UART3数据给蓝牙模块（适合少量数据）
+ * @param  data: 要发送的数据缓冲区指针
+ * @param  len:  要发送数据的长度（字节）
+ * @retval 0: 成功；1: 失败
+ */
+uint8_t UART3_SendDataToBluetooth_Poll(uint8_t *data, uint16_t len)
 {
-    return uart3_rx_buffer.count;
-}
-
-// 清空缓冲区
-void UART3_Clear_Buffer(void)
-{
-    taskENTER_CRITICAL();
-    uart3_rx_buffer.head = 0;
-    uart3_rx_buffer.tail = 0;
-    uart3_rx_buffer.count = 0;
-    uart3_rx_buffer.data_ready = 0;
-    taskEXIT_CRITICAL();
-}
-
-// 发送数据（非阻塞版本）
-uint8_t UART3_Send_Data(const uint8_t* data, uint16_t len)
-{
-    uint16_t i;
-    for (i = 0; i < len; i++)
+    // 参数校验
+    if(data == NULL || len == 0 || len > UART3_BUF_SIZE)
     {
-        // 使用超时机制，避免无限等待
-        uint32_t timeout = 10000;  // 超时计数
-        while (USART_GetFlagStatus(USART3, USART_FLAG_TXE) == RESET && timeout > 0)
-        {
-            timeout--;
-            // 给其他任务运行的机会
-            if (timeout % 1000 == 0)
-            {
-                taskYIELD();
-            }
-        }
-        
-        if (timeout == 0)
-        {
-            printf("UART3 Send Timeout!\r\n");
-            return 0;  // 发送失败
-        }
-        
+        return 1;
+    }
+    
+    // 轮询发送每个字节
+    for(uint16_t i = 0; i < len; i++)
+    {
+        // 等待发送缓冲区为空（TXE标志位复位）
+        while(USART_GetFlagStatus(USART3, USART_FLAG_TXE) == RESET);
+        // 发送当前字节
         USART_SendData(USART3, data[i]);
     }
-    return 1;  // 发送成功
-}
-
-// 发送字符串
-uint8_t UART3_Send_String(const char* str)
-{
-    return UART3_Send_Data((const uint8_t*)str, strlen(str));
+    
+    // 等待最后一个字节发送完成（TC标志位置位），确保数据完全发送
+    while(USART_GetFlagStatus(USART3, USART_FLAG_TC) == RESET);
+    
+    return 0;
 }
 
 // 注册蓝牙命令回调函数
@@ -251,27 +262,26 @@ void Bluetooth_Process_Command(const char* cmd, uint16_t len)
     }
     
     // 默认处理一些常用命令
-    // 使用strcasecmp进行大小写不敏感的比较
     if (strcasecmp(cmd, "AT") == 0)
     {
         // AT指令处理
         printf("Bluetooth Response: OK\r\n");
-        UART3_Send_String("OK\r\n");
+        UART3_SendDataToBluetooth_Poll((uint8_t*)"OK\r\n", 4);
     }
     else if (strcasecmp(cmd, "STATUS") == 0)
     {
         // 状态查询
         printf("Bluetooth Response: STM32 Bluetooth Module Ready\r\n");
-        UART3_Send_String("STM32 Bluetooth Module Ready\r\n");
+        UART3_SendDataToBluetooth_Poll((uint8_t*)"STM32 Bluetooth Module Ready\r\n", 30);
     }
     else if (strcasecmp(cmd, "HELP") == 0)
     {
         // 帮助信息
         printf("Bluetooth Response: Help information sent\r\n");
-        UART3_Send_String("Available commands:\r\n");
-        UART3_Send_String("AT - Test connection\r\n");
-        UART3_Send_String("STATUS - Get system status\r\n");
-        UART3_Send_String("HELP - Show this help\r\n");
+        UART3_SendDataToBluetooth_Poll((uint8_t*)"Available commands:\r\n", 19);
+        UART3_SendDataToBluetooth_Poll((uint8_t*)"AT - Test connection\r\n", 21);
+        UART3_SendDataToBluetooth_Poll((uint8_t*)"STATUS - Get system status\r\n", 28);
+        UART3_SendDataToBluetooth_Poll((uint8_t*)"HELP - Show this help\r\n", 23);
     }
     else
     {
@@ -279,76 +289,70 @@ void Bluetooth_Process_Command(const char* cmd, uint16_t len)
         char response[64];
         snprintf(response, sizeof(response), "ERROR: Unknown command '%s'\r\n", cmd);
         printf("Bluetooth Response: Unknown command '%s'\r\n", cmd);
-        UART3_Send_String(response);
+        UART3_SendDataToBluetooth_Poll((uint8_t*)response, strlen(response));
     }
 }
 
-// 蓝牙数据处理任务（事件驱动版本）
+// 蓝牙数据处理任务（基于IDLE中断和DMA）
 void Bluetooth_Process_Task(void *pvParameters)
 {
     uint8_t cmd_buffer[128];
     uint16_t cmd_len = 0;
-    uint8_t ch;
     
-    // 保存任务句柄
-    bluetooth_task_handle = xTaskGetCurrentTaskHandle();
-    printf("Bluetooth Process Task Started, handle=%p\r\n", bluetooth_task_handle);
+    printf("Bluetooth Process Task Started (DMA+IDLE mode)\r\n");
     
     // 发送启动信息
-    UART3_Send_String("STM32 Bluetooth Module Ready\r\n");
-    UART3_Send_String("Type 'HELP' for available commands\r\n");
+    UART3_SendDataToBluetooth_Poll((uint8_t*)"STM32 Bluetooth Module Ready\r\n", 29);
+    UART3_SendDataToBluetooth_Poll((uint8_t*)"Type 'HELP' for available commands\r\n", 37);
     
     while (1)
     {
-        printf("Waiting for task notification...\r\n");
-        
-        // 等待任务通知，超时100ms（这样可以定期检查其他条件）
-        uint32_t notification_result = ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(5000));
-        
-        printf("Task notification received: %lu, buffer_count=%d, data_ready=%d\r\n", 
-               notification_result, UART3_Get_Available_Data(), uart3_rx_buffer.data_ready);
-        
-        // 检查是否有数据可读
-        cmd_len = 0;
-        while (UART3_Get_Available_Data() > 0 && cmd_len < sizeof(cmd_buffer) - 1)
+        // 检查是否有新数据到达
+        if (uart3_rx_len > 0)
         {
-            UART3_Read_Data(&ch, 1);
-            printf("Read byte: 0x%02X ('%c')\r\n", ch, (ch >= 32 && ch <= 126) ? ch : '.');
+            // 处理接收到的数据
+            printf("Processing UART3 data (len=%d): ", uart3_rx_len);
             
-            // 跳过\r和\n作为命令分隔符
-            if (ch == '\r' || ch == '\n')
+            // 查找命令结束符（\r\n）
+            uint8_t cmd_found = 0;
+            for (uint16_t i = 0; i < uart3_rx_len; i++)
             {
-                if (cmd_len > 0)
+                // 跳过\r和\n作为命令分隔符
+                if (uart3_buffer[i] == '\r' || uart3_buffer[i] == '\n')
                 {
-                    printf("Command end detected\r\n");
-                    break;  // 命令结束
+                    if (cmd_len > 0)
+                    {
+                        cmd_buffer[cmd_len] = '\0';  // 字符串结束符
+                        printf("Command: '%s'\r\n", cmd_buffer);
+                        
+                        Bluetooth_Process_Command((const char*)cmd_buffer, cmd_len);
+                        cmd_len = 0;
+                        cmd_found = 1;
+                    }
+                }
+                else
+                {
+                    if (cmd_len < sizeof(cmd_buffer) - 1)
+                    {
+                        cmd_buffer[cmd_len++] = uart3_buffer[i];
+                    }
                 }
             }
-            else
+            
+            // 如果没有找到命令结束符但还有数据，直接处理
+            if (!cmd_found && cmd_len > 0)
             {
-                cmd_buffer[cmd_len++] = ch;
+                cmd_buffer[cmd_len] = '\0';
+                printf("Direct command: '%s'\r\n", cmd_buffer);
+                Bluetooth_Process_Command((const char*)cmd_buffer, cmd_len);
+                cmd_len = 0;
             }
+            
+            // 清空接收长度
+            uart3_rx_len = 0;
         }
         
-        // 只有当命令长度大于0时才处理
-        if (cmd_len > 0)
-        {
-            // 清理数据，移除不可见字符
-            cmd_len = clean_buffer(cmd_buffer, cmd_len);
-            cmd_buffer[cmd_len] = '\0';  // 字符串结束符
-            
-            // 打印接收到的原始数据用于调试
-            printf("Bluetooth Received: '%s' (len=%d)\r\n", (char*)cmd_buffer, cmd_len);
-            
-            Bluetooth_Process_Command((const char*)cmd_buffer, cmd_len);
-            
-            cmd_len = 0;  // 重置命令长度
-            uart3_rx_buffer.data_ready = 0;
-        }
-        else
-        {
-            printf("No command data to process\r\n");
-        }
+        vTaskDelay(pdMS_TO_TICKS(10));  // 10ms延时
     }
 }
 
