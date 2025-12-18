@@ -11,7 +11,6 @@
 // 页面
 //++++++++++++++++++++++++=
 #include "TandH.h"
-#include "setting_menu.h"
 #include "testlist_menu.h"
 #include "Light_page.h"
 #include "PM25_page.h"
