@@ -594,8 +594,25 @@ uint8_t HC05_Process_Commands(const char *buffer)
             uart3_printf("light: %d\r\n",SensorData.light_data.lux);
             return HC05_OK;  // 添加返回成功标志
         }
+        if (strcmp("OFF",msg_value)==0||strcmp("off",msg_value)==0)
+        {
+            Light_ON = 0;
+            uart3_printf("light: OFF\r\n");
+            printf("light: OFF\r\n");
+            return HC05_OK;
+        }
+        if (strcmp("ON",msg_value)==0||strcmp("on",msg_value)==0)
+        {
+            Light_ON = 1;
+            uart3_printf("light: ON\r\n");
+            printf("light: ON\r\n");
+            return HC05_OK;
+        }
+        
         
     }
+
+    
    
     
     // 解析其他命令...

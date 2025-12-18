@@ -168,12 +168,12 @@ static void Bluetooth_Main_Task(void *pvParameters)
         if (uart3_rx_len > 0)
         {
             // 打印接收到的数据
-            printf("HC-05 Receive Data: %s\r\n", uart3_buffer); 
+            printf("HC-05 Receive Data: %s\r\n----->\n\n", uart3_buffer); 
             
             // 处理蓝牙命令
             if (HC05_Process_Commands((const char*)uart3_buffer) == HC05_OK)
             {
-                printf("Command processed successfully\r\n");
+                printf("\n<----Command processed successfully\r\n");
             }
             
             // 清空缓冲区
