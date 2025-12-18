@@ -22,7 +22,7 @@ QueueHandle_t keyQueue; // 按键队列
 
 // 验证传感器状态变量的可访问性
 extern uint8_t DHT11_ON;
-extern uint8_t Light_ON; 
+extern uint8_t Light_ON;
 
 static TaskHandle_t Menu_handle = NULL;
 static TaskHandle_t Key_handle = NULL;
@@ -47,28 +47,16 @@ int main(void)
     OLED_Refresh();
     Key_Init();
     Beep_Init();
-   
 
     // 初始化UART2，用于ESP8266通信
     UART2_DMA_RX_Init(115200);
-    
+
     // 初始化UART3（用于蓝牙通信）
     UART3_DMA_RX_Init(115200);
     printf("UART3 (Bluetooth) DMA+IDLE initialization complete\r\n");
-    
 
-
-    BEEP_Buzz(10);
-
-    printf("\r\n==================================\r\n");
-    printf("||     STM32F103C8T6   \t\t||\r\n");
-    printf("||     FreeRTOS V20221201   \t||\r\n");
-    printf("||     fengwuheng   \t\t||\r\n");
-    printf("||     v1.0.0   \t\t||\r\n");
-    printf("=====================================\r\n");
- 
-  // 读取Flash大小寄存器 (0x1FFFF7E22)
-  uint16_t flash_size = *((uint16_t*)0x1FFFF7E0);
+    // 读取Flash大小寄存器 (0x1FFFF7E22)
+    uint16_t flash_size = *((uint16_t *)0x1FFFF7E0);
 
     printf("Flash Size: %d KB\n", flash_size);
     Light_ADC_Init();
@@ -114,7 +102,7 @@ int main(void)
                 (UBaseType_t)4,                 /* 任务优先级 */
                 (TaskHandle_t *)&Menu_handle);  /* 任务控制句柄 */
     xTaskCreate(Key_Main_Task, "KeyMain", 96, NULL, 4, &Key_handle);
-    
+
     // 创建蓝牙数据处理任务
     xTaskCreate((TaskFunction_t)Bluetooth_Main_Task,
                 (const char *)"Bluetooth_Main",
@@ -123,12 +111,14 @@ int main(void)
                 (UBaseType_t)3,
                 (TaskHandle_t *)&Bluetooth_handle);
 
+    printf("------------------\n");
     printf("creat task OK\n");
+    printf("------------------\n");
 
     // 创建传感器数据采集任务
     SensorData_CreateTask();
     printf("SensorData task created\n");
-    
+
     // 打印传感器初始状态
     printf("Initial sensor states: DHT11=%d, Light=%d\n", DHT11_ON, Light_ON);
 
@@ -167,7 +157,7 @@ static void Key_Main_Task(void *pvParameters)
 static void Bluetooth_Main_Task(void *pvParameters)
 {
     printf("Bluetooth_Main_Task start ->\n");
-    
+
     // 初始化蓝牙模块（如果main中没有初始化）
     // if(Bluetooth_Init(9600) != BLUETOOTH_OK)
     // {
@@ -175,14 +165,12 @@ static void Bluetooth_Main_Task(void *pvParameters)
     //     vTaskDelete(NULL);
     //     return;
     // }
-    
+
     // 蓝牙任务主循环
-    while(1)
+    while (1)
     {
-      
-        
+
         // 延时10ms
         vTaskDelay(pdMS_TO_TICKS(10));
     }
 }
-
