@@ -13,6 +13,8 @@
 #include "esp8266.h"
 #include "uart2.h"
 #include "uart3.h"
+#include "HC-05.h"
+#include "Bluetooth.h"
 #include "light.h"
 #include "rtc_date.h"
 #include "PM25.h"
@@ -56,6 +58,17 @@ int main(void)
     // 初始化UART3（用于蓝牙通信）
     UART3_DMA_RX_Init(115200);
     printf("UART3 (Bluetooth) DMA+IDLE initialization complete\r\n");
+    
+    // 初始化蓝牙模块
+    printf("Initializing Bluetooth module...\r\n");
+    if(Bluetooth_Init(9600) == BLUETOOTH_OK)
+    {
+        printf("Bluetooth initialization success\r\n");
+    }
+    else
+    {
+        printf("Bluetooth initialization failed\r\n");
+    }
 
     BEEP_Buzz(10);
 
@@ -175,8 +188,23 @@ static void Bluetooth_Main_Task(void *pvParameters)
 {
     printf("Bluetooth_Main_Task start ->\n");
     
-    // 直接调用蓝牙处理任务
-    Bluetooth_Process_Task(pvParameters);
+    // 初始化蓝牙模块（如果main中没有初始化）
+    // if(Bluetooth_Init(9600) != BLUETOOTH_OK)
+    // {
+    //     printf("Bluetooth initialization failed in task\r\n");
+    //     vTaskDelete(NULL);
+    //     return;
+    // }
+    
+    // 蓝牙任务主循环
+    while(1)
+    {
+        // 处理蓝牙数据接收和发送
+        Bluetooth_Process_Task();
+        
+        // 延时10ms
+        vTaskDelay(pdMS_TO_TICKS(10));
+    }
 }
 
 static void ESP8266_Main_Task(void *pvParameters)
