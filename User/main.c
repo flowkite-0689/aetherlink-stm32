@@ -65,6 +65,7 @@ int main(void)
     if(Bluetooth_Init(115200) == BLUETOOTH_OK)
     {
         printf("Bluetooth initialization success\r\n");
+        Bluetooth_Send_String("Bluetooth initialization success\r\n");
     }
     else
     {
