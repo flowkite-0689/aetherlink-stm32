@@ -18,7 +18,6 @@ void SensorData_Init(void)
 {
     DHT11_Init();
     Light_ADC_Init(); // ADC1 初始化用于光照传感器
-    PM25_Init();      // ADC2 初始化用于PM2.5传感器
 }
 
 static void SensorData_Task(void *pvParameters)

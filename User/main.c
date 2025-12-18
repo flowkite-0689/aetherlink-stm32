@@ -14,11 +14,9 @@
 #include "uart2.h"
 #include "uart3.h"
 #include "HC-05.h"
-#include "Bluetooth.h"
 #include "light.h"
 #include "rtc_date.h"
 #include "sensordata.h"
-#include "Bluetooth/Bluetooth.h"
 // 创建队列来存储按键事件
 QueueHandle_t keyQueue; // 按键队列
 
@@ -50,7 +48,7 @@ int main(void)
     OLED_Refresh();
     Key_Init();
     Beep_Init();
-    PM25_Init();
+   
 
     // 初始化UART2，用于ESP8266通信
     UART2_DMA_RX_Init(115200);
@@ -59,17 +57,7 @@ int main(void)
     UART3_DMA_RX_Init(115200);
     printf("UART3 (Bluetooth) DMA+IDLE initialization complete\r\n");
     
-    // 初始化蓝牙模块
-    printf("Initializing Bluetooth module...\r\n");
-    if(Bluetooth_Init(115200) == BLUETOOTH_OK)
-    {
-        printf("Bluetooth initialization success\r\n");
-        Bluetooth_Send_String("Bluetooth initialization success\r\n");
-    }
-    else
-    {
-        printf("Bluetooth initialization failed\r\n");
-    }
+
 
     BEEP_Buzz(10);
 
@@ -192,8 +180,7 @@ static void Bluetooth_Main_Task(void *pvParameters)
     // 蓝牙任务主循环
     while(1)
     {
-        // 处理蓝牙数据接收和发送
-        Bluetooth_Process_Task();
+      
         
         // 延时10ms
         vTaskDelay(pdMS_TO_TICKS(10));
@@ -526,21 +513,7 @@ static void ESP8266_Main_Task(void *pvParameters)
                     printf("ESP8266 TCP Publish myLuxGet Success\r\n");
                 }
             }
-            if (PM25_ON)
-            {
-                // 发布主题 : myMP25004
-                snprintf(data, sizeof(data), "#%0.1f#%d",
-                         SensorData.pm25_data.pm25_value,
-                         SensorData.pm25_data.level);
-                if (ESP8266_TCP_Publish("4af24e3731744508bd519435397e4ab5", "myMP25004", data) != 1) // 发布主题
-                {
-                    printf("ESP8266 TCP Publish myMP25004 Error\r\n");
-                }
-                else
-                {
-                    printf("ESP8266 TCP Publish myMP25004 Success\r\n");
-                }
-            }
+           
         }
         if (uart2_rx_len > 0)
         {

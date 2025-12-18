@@ -42,7 +42,7 @@ menu_item_t *index_init(void)
     g_index_state.scroll_offset = 64;
     g_index_state.scroll_direction = 0;
     g_index_state.scroll_step = 0;
-     
+
     // 初始化RTC
     MyRTC_Init();
 
@@ -148,7 +148,6 @@ void index_update_time(void)
     g_index_state.year = RTC_data.year;
     strncpy(g_index_state.weekday, RTC_data.weekday, sizeof(g_index_state.weekday) - 1);
     g_index_state.weekday[sizeof(g_index_state.weekday) - 1] = '\0';
-   
 }
 
 index_state_t *index_get_state(void)
@@ -195,7 +194,7 @@ static void index_update_scroll(void)
     {
         state->scroll_step++;
 
-        OLED_Clear_Rect(0, 0, state->scroll_offset+8,64);
+        OLED_Clear_Rect(0, 0, state->scroll_offset + 8, 64);
         // 根据方向更新偏移量，每次8像素
         if (state->scroll_direction == 1) // 向右
         {
@@ -267,9 +266,8 @@ static void index_display_time_info(void)
     index_state_t *state = &g_index_state;
     uint8_t x_offset = state->scroll_offset; // 获取当前滚动偏移
 
-    if (x_offset ==64)
+    if (x_offset == 64)
     {
-        
 
         // 在页面左边64像素位置放图标
         if (wifi_connected)
@@ -281,7 +279,7 @@ static void index_display_time_info(void)
             OLED_Clear_Rect(0, 0, 32, 32);
         }
 
-        if (Light_ON&&!Light_ERR)
+        if (Light_ON && !Light_ERR)
         {
             OLED_ShowPicture(-32 + x_offset, 0, 32, 32, gImage_lightQD, 1);
         }
@@ -289,7 +287,7 @@ static void index_display_time_info(void)
         {
             OLED_Clear_Rect(32, 0, 62, 32);
         }
-        if (DHT11_ON&&!DHT11_ERR)
+        if (DHT11_ON && !DHT11_ERR)
         {
             OLED_ShowPicture(-64 + x_offset, 32, 32, 32, gImage_TandH, 1);
         }
@@ -297,14 +295,7 @@ static void index_display_time_info(void)
         {
             OLED_Clear_Rect(0, 32, 32, 64);
         }
-        if (PM25_ON&&!PM25_ERR)
-        {
-            OLED_ShowPicture(-32 + x_offset, 32, 32, 32, gImage_pm25, 1);
-        }
-        else
-        {
-            OLED_Clear_Rect(32, 32, 62, 64);
-        }
+        
 
         OLED_Refresh_Dirty();
     }
@@ -321,25 +312,18 @@ static void index_display_time_info(void)
 
     );
 
-   
-        OLED_Printf(x_offset, 32, " wifi:%s   ",
+    OLED_Printf(x_offset, 32, " wifi:%s   ",
 
-                    wifi_connected ? "OK" : "NO"
-            );
-    
+                wifi_connected ? "OK" : "NO");
 
-    
-        OLED_Printf(x_offset, 48, "Server:%s ",
-                    Server_connected ? "OK" : "NO"
-                );
-   
-        
-   
+    OLED_Printf(x_offset, 48, "Server:%s ",
+                Server_connected ? "OK" : "NO");
+
     // 应用滚动偏移显示内容
 
     if (x_offset == 0)
     {
-        if (DHT11_ON&&!DHT11_ERR)
+        if (DHT11_ON && !DHT11_ERR)
         {
 
             OLED_Printf(64, 0, " T : %2d.%1d",
@@ -350,40 +334,23 @@ static void index_display_time_info(void)
         }
         else
         {
-            OLED_Printf(64, 0, " T : %s",DHT11_ERR?"ERR":"OFF");
+            OLED_Printf(64, 0, " T : %s", DHT11_ERR ? "ERR" : "OFF");
 
-            OLED_Printf(64, 16, " H : %s",DHT11_ERR?"ERR":"OFF");
+            OLED_Printf(64, 16, " H : %s", DHT11_ERR ? "ERR" : "OFF");
         }
-    //light
-     if (Light_ON&&!Light_ERR)
-    {
-        OLED_Printf(64, 32, " L : %2d ",
+        // light
+        if (Light_ON && !Light_ERR)
+        {
+            OLED_Printf(64, 32, " L : %2d ",
 
-                
-                    SensorData.light_data.lux);
+                        SensorData.light_data.lux);
+        }
+        else
+        {
+            OLED_Printf(64, 32, " L : %s ", Light_ERR ? "ERR" : "OFF");
+        }
     }
-    else
-    {
-        OLED_Printf(64, 32, " L : %s ",Light_ERR?"ERR":"OFF");
-    }
-    //pm25
-    if (PM25_ON&&!PM25_ERR)
-    {
-        OLED_Printf(64, 48, " P : %3.1f ",
-                   
-                    SensorData.pm25_data.pm25_value);
-    }
-    else
-    {
-        OLED_Printf(64, 48, " P : %s ",PM25_ERR?"ERR":"OFF");
-    }
-    }
-
-   
-
-    
 }
-
 static void index_display_status_info(void)
 {
     index_state_t *state = &g_index_state;

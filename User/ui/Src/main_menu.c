@@ -12,7 +12,6 @@
 //++++++++++++++++++++++++=
 #include "TandH.h"
 #include "Light_page.h"
-#include "PM25_page.h"
 #include "WiFiStatus.h"
 #include "ParamSetting.h"
 // ==================================
@@ -75,12 +74,7 @@ menu_item_t *main_menu_init(void)
         menu_add_child(main_menu, Light_page);
     }
 
-    menu_item_t *PM25_page = PM25_init();
-    if (PM25_page != NULL)
-    {
-        PM25_page->content.custom.icon_data = gImage_pm25; // 使用test图标作为占位符
-        menu_add_child(main_menu, PM25_page);
-    }
+    
 
 
 
