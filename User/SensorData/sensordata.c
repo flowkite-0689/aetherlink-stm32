@@ -30,15 +30,7 @@ static void SensorData_Task(void *pvParameters)
 
     while (1)
     {
-        // 打印当前传感器状态，用于调试
-        // static uint32_t last_debug_print = 0;
-        // uint32_t current_tick = xTaskGetTickCount();
-        // if (current_tick - last_debug_print > pdMS_TO_TICKS(5000)) { // 每5秒打印一次
-        //     printf("SensorData_Task: DHT11_ON=%d, Light_ON=%d, PM25_ON=%d\r\n", DHT11_ON, Light_ON, PM25_ON);
-        //     last_debug_print = current_tick;
-        // }
-        
-        // 读取DHT11温湿度数据
+       
         if (DHT11_ON)
         {
             taskENTER_CRITICAL();
@@ -51,16 +43,6 @@ static void SensorData_Task(void *pvParameters)
             taskEXIT_CRITICAL();
         }
 
-        // {
-        //     printf("DHT11 read failed\r\n");
-        // }
-        // else
-        // {
-        //     printf("Temperature: %d.%dC, Humidity: %d.%d%%\r\n",
-        //            SensorData.dht11_data.temp_int, SensorData.dht11_data.temp_deci,
-        //            SensorData.dht11_data.humi_int, SensorData.dht11_data.humi_deci);
-        // }
-
         // 读取光照强度数据
         // 配置ADC通道1 (PA1) 用于光照传感器
         if (Light_ON)
@@ -71,42 +53,7 @@ static void SensorData_Task(void *pvParameters)
             SensorData.light_data.lux = lux_value;
             taskEXIT_CRITICAL();
         }
-
-        // printf("Light: %d lux\r\n", SensorData.light_data.lux);
-        // 读取PM2.5数据
-        // // 开启PM2.5 LED (低电平有效)
-        // GPIO_ResetBits(GPIOC, GPIO_Pin_13);
-        // Delay_us(280); // 关键延时280us，等待LED稳定
-        // vTaskDelay(pdMS_TO_TICKS(1000));
-        // // 读取ADC值
-        // uint16_t adc_raw = PM25_GetRawValue();
-        // float voltage = ((float)adc_raw / 4095.0f) * 5.0f;
-
-        // // 关闭LED (高电平)
-        // GPIO_SetBits(GPIOC, GPIO_Pin_13);
-
-        // // 计算PM2.5值，使用标准公式
-        // float pm25_value = 170.0f * voltage - 100.0f;
-        // if (pm25_value < 0) pm25_value = 0;
-        if (PM25_ON)
-        {
-            taskENTER_CRITICAL();
-
-            SensorData.pm25_data.pm25_value = PM25_ReadPM25(); // 四舍五入转换
-            if (SensorData.pm25_data.pm25_value==0.0)
-            {
-                PM25_ERR=1;
-            }
-            
-            SensorData.pm25_data.level = PM25_GetLevelFromValue(SensorData.pm25_data.pm25_value);
-            taskEXIT_CRITICAL();
-        }
-
-        // SensorData.pm25_data.voltage = voltage;
-        // SensorData.pm25_data.adc_raw = adc_raw;
-        // printf("PM2.5: %.1f ug/m3, Level: %d\r\n",
-        //            SensorData.pm25_data.pm25_value, SensorData.pm25_data.level);
-        // printf("-------------\r\n");
+      
 
         // 每3秒读取一次传感器数据
         vTaskDelay(pdMS_TO_TICKS(Sensordata_delaytime));

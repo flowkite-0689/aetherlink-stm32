@@ -17,7 +17,6 @@
 #include "Bluetooth.h"
 #include "light.h"
 #include "rtc_date.h"
-#include "PM25.h"
 #include "sensordata.h"
 #include "Bluetooth/Bluetooth.h"
 // 创建队列来存储按键事件
