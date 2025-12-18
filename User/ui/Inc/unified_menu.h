@@ -43,22 +43,14 @@ typedef struct
 
 typedef struct
 {
-    const char *text; // 文本内容
-    // uint8_t max_length;             // 最大显示长度
-} menu_text_t;
-
-typedef struct
-{
     void (*draw_function)(void *context); // 自定义绘制函数
     void *draw_context;                   // 绘制上下文数据
     const unsigned char *icon_data;       // 图标数据
-    const char *text;
 } menu_custom_t;
 
 typedef union
 {
     menu_icon_t icon;     // 图标数据
-    menu_text_t text;     // 文本数据
     menu_custom_t custom; // 自定义页面数据
 } menu_content_t;
 

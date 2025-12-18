@@ -70,7 +70,7 @@ int main(void)
   // ¶ÁÈ¡Flash´óÐ¡¼Ä´æÆ÷ (0x1FFFF7E22)
   uint16_t flash_size = *((uint16_t*)0x1FFFF7E0);
 
-  printf("Flash Size: %d KB\n", flash_size);
+    printf("Flash Size: %d KB\n", flash_size);
     Light_ADC_Init();
     printf("Light_ADC_Init OK\n");
 

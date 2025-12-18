@@ -512,7 +512,7 @@ void menu_display_vertical(menu_item_t *menu)
         uint8_t line = i - start_index;
         char arrow = (i == menu->selected_child) ? '>' : ' ';
 
-        OLED_Printf_Line(line, "%c %s", arrow, menu->children[i]->content.text.text);
+        OLED_Printf_Line(line, "%c %s", arrow, menu->children[i]->name);
     }
 
     // 如果本页不足4行，下面几行清空
