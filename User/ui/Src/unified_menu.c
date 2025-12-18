@@ -119,8 +119,7 @@ menu_item_t *menu_item_create(const char *name, menu_type_t type, menu_content_t
     item->child_count = 0;
     item->selected_child = 0;
 
-    // 设置默认上下文
-    item->context = NULL;
+  
 
     return item;
 }
@@ -358,13 +357,6 @@ int8_t menu_item_delete(menu_item_t *item)
             cur->child_count = 0;
         }
 
-        // 2. 释放上下文（如果有）
-        if (cur->context != NULL)
-        {
-            // printf("FREE: %s context, addr=%p\n", cur->name, cur->context);
-            vPortFree(cur->context);
-            cur->context = NULL;
-        }
 
         // 3. 释放菜单项结构本身
         // printf("FREE: %s menu_item, addr=%p, size=%d bytes\n",

@@ -89,8 +89,7 @@ typedef struct menu_item
     uint8_t child_count;         // 子菜单数量
     uint8_t selected_child;      // 选中的子项索引
 
-    // 上下文数据
-    void *context; // 自定义上下文
+    
 } menu_item_t;
 
 // ==================================
@@ -177,7 +176,7 @@ typedef struct
     menu_event_type_t type;
     uint32_t timestamp;
     uint8_t param;
-    
+
 } menu_event_t;
 
 // ==================================
@@ -375,17 +374,6 @@ void menu_key_task(void *pvParameters);
 #define MENU_ITEM_CUSTOM(name, draw_func, context) \
     menu_item_create(name, MENU_TYPE_CUSTOM,       \
                      (menu_content_t){.custom = {draw_func, context}})
-
-// 便利宏定义
-// 创建图标菜单项
-// #define MENU_ITEM_ICON(name, icon_ptr, w, h) \
-//     menu_item_create(name, MENU_TYPE_HORIZONTAL_ICON, \
-//         (menu_content_t){.icon = {icon_ptr, w, h}})
-
-//// 创建文本菜单项
-// #def ine  MENU_ITEM_TEXT(name, text_str, max_len) \
-//    menu_item_create(name, MENU_TYPE_VERTICAL_LIST, \
-//        (menu_content_t){.text = {text_str, max_len}})
 
 // 常用布局配置预设
 #define LAYOUT_HORIZONTAL_MAIN() { \
