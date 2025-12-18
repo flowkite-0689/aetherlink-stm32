@@ -34,12 +34,6 @@ typedef enum
 // 菜单项数据类型联合体
 // ==================================
 
-typedef struct
-{
-    const unsigned char *icon_data; // 图标数据
-    // uint8_t icon_width;             // 图标宽度
-    // uint8_t icon_height;            // 图标高度
-} menu_icon_t;
 
 typedef struct
 {
@@ -50,7 +44,7 @@ typedef struct
 
 typedef union
 {
-    menu_icon_t icon;     // 图标数据
+    const unsigned char *icon_data; // 图标数据
     menu_custom_t custom; // 自定义页面数据
 } menu_content_t;
 
@@ -66,13 +60,6 @@ typedef struct menu_item
 
     // 显示内容
     menu_content_t content; // 显示内容（图标或文本）
-
-    // 位置和布局信息
-    uint8_t display_index; // 显示索引
-    uint8_t x_pos;         // X坐标
-    uint8_t y_pos;         // Y坐标
-    uint8_t width;         // 宽度
-    uint8_t height;        // 高度
 
     // 状态信息
     uint8_t is_selected; // 是否选中

@@ -103,11 +103,11 @@ menu_item_t *menu_item_create(const char *name, menu_type_t type, menu_content_t
     item->name = name;
     item->type = type;
     item->content = content;
-    item->display_index = 0;
-    item->x_pos = 0;
-    item->y_pos = 0;
-    item->width = (type == MENU_TYPE_HORIZONTAL_ICON) ? 32 : 128;
-    item->height = (type == MENU_TYPE_HORIZONTAL_ICON) ? 32 : 16;
+    // item->display_index = 0;
+    // item->x_pos = 0;
+    // item->y_pos = 0;
+    // item->width = (type == MENU_TYPE_HORIZONTAL_ICON) ? 32 : 128;
+    // item->height = (type == MENU_TYPE_HORIZONTAL_ICON) ? 32 : 16;
 
     // 设置默认状态
     item->is_selected = 0;
@@ -170,20 +170,7 @@ int8_t menu_add_child(menu_item_t *parent, menu_item_t *child)
     return 0;
 }
 
-int8_t menu_item_set_position(menu_item_t *item, uint8_t x, uint8_t y, uint8_t width, uint8_t height)
-{
-    if (item == NULL)
-    {
-        return -1;
-    }
 
-    item->x_pos = x;
-    item->y_pos = y;
-    item->width = width;
-    item->height = height;
-
-    return 0;
-}
 
 int8_t menu_item_set_callbacks(menu_item_t *item,
                                void (*on_enter)(menu_item_t *),
@@ -429,7 +416,7 @@ void menu_display_horizontal(menu_item_t *menu)
     uint8_t right_index = (center_index + 1) % menu->child_count;
 
     // 显示左侧图标（淡化）
-    if (menu->children[left_index]->content.icon.icon_data)
+    if (menu->children[left_index]->content.icon_data)
     {
         if (menu->children[left_index]->type == MENU_TYPE_CUSTOM)
         {
@@ -439,12 +426,12 @@ void menu_display_horizontal(menu_item_t *menu)
         else
         {
             OLED_ShowPicture(0, 16, 32, 32,
-                             menu->children[left_index]->content.icon.icon_data, 1);
+                             menu->children[left_index]->content.icon_data, 1);
         }
     }
 
     // 显示中间图标（清晰）
-    if (menu->children[center_index]->content.icon.icon_data)
+    if (menu->children[center_index]->content.icon_data)
     {
         OLED_Printf_Line(3,"       %s",menu->children[center_index]->name);
         if (menu->children[center_index]->type == MENU_TYPE_CUSTOM)
@@ -456,12 +443,12 @@ void menu_display_horizontal(menu_item_t *menu)
         else
         {
             OLED_ShowPicture(48, 16, 32, 32,
-                             menu->children[center_index]->content.icon.icon_data, 0);
+                             menu->children[center_index]->content.icon_data, 0);
         }
     }
 
     // 显示右侧图标（淡化）
-    if (menu->children[right_index]->content.icon.icon_data)
+    if (menu->children[right_index]->content.icon_data)
     {
         if (menu->children[right_index]->type == MENU_TYPE_CUSTOM)
         {
@@ -472,7 +459,7 @@ void menu_display_horizontal(menu_item_t *menu)
         {
 
             OLED_ShowPicture(96, 16, 32, 32,
-                             menu->children[right_index]->content.icon.icon_data, 1);
+                             menu->children[right_index]->content.icon_data, 1);
         }
     }
 
