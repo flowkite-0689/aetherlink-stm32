@@ -523,8 +523,7 @@ uint8_t HC05_Check_Connection(void)
  */
 void HC05_Receive_Start(void)
 {
-    // UART3的DMA接收已经在外设初始化中启动
-    // 这里不需要额外操作
+    
 }
 
 /**

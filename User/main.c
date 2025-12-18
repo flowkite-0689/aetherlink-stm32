@@ -40,18 +40,23 @@ int main(void)
     TIM2_Delay_Init();
     debug_init();
     OLED_Init();
-
+    HC05_Init(115200);
+    HC05_Send_String("test1\n");
+    HC05_Send_String("AT\r\n");
     OLED_Show_many_Tupian(tjbg, 8, 1);
 
+    // if(HC05_Send_AT_Cmd("AT\r\n", "OK", 1000))
+    // {
+    //     printf("AT OK\r\n");
+    //     HC05_Send_String("AT OK\r\n");
+    // }
     OLED_Refresh();
     Key_Init();
-    Beep_Init();
 
     // 初始化UART2，用于ESP8266通信
     UART2_DMA_RX_Init(115200);
 
-    // 初始化UART3（用于蓝牙通信）
-    UART3_DMA_RX_Init(115200);
+    
     printf("UART3 (Bluetooth) DMA+IDLE initialization complete\r\n");
 
     // 读取Flash大小寄存器 (0x1FFFF7E22)
@@ -107,7 +112,7 @@ int main(void)
                 (const char *)"Bluetooth_Main",
                 (uint16_t)384,
                 (void *)NULL,
-                (UBaseType_t)3,
+                (UBaseType_t)2,
                 (TaskHandle_t *)&Bluetooth_handle);
 
     printf("------------------\n");
@@ -168,7 +173,15 @@ static void Bluetooth_Main_Task(void *pvParameters)
     // 蓝牙任务主循环
     while (1)
     {
+//   UART3_SendDataToBLE_Poll("hello\n",sizeof("hello\n"));
+        // HC05_Send_String("hello\n");
+        if (uart3_rx_len > 0)
+        {
+            uart3_rx_len = 0;
+            printf("HC-05 Receive Data: %s\r\n", uart3_buffer); 
 
+            
+        }
         // 延时10ms
         vTaskDelay(pdMS_TO_TICKS(10));
     }

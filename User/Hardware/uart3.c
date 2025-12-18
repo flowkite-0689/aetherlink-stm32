@@ -4,7 +4,6 @@
 uint8_t uart3_buffer[UART3_BUF_SIZE];
 uint8_t uart3_rx_len;
 
-/* ---------- 以下与之前完全一致，仅改名 ---------- */
 static void UART3_GPIO_Init(void)
 {
     GPIO_InitTypeDef GPIO_InitStruct;
