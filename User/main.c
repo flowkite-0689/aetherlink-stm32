@@ -19,6 +19,7 @@
 #include "rtc_date.h"
 #include "PM25.h"
 #include "sensordata.h"
+#include "Bluetooth/Bluetooth.h"
 // 创建队列来存储按键事件
 QueueHandle_t keyQueue; // 按键队列
 
@@ -61,7 +62,7 @@ int main(void)
     
     // 初始化蓝牙模块
     printf("Initializing Bluetooth module...\r\n");
-    if(Bluetooth_Init(9600) == BLUETOOTH_OK)
+    if(Bluetooth_Init(115200) == BLUETOOTH_OK)
     {
         printf("Bluetooth initialization success\r\n");
     }

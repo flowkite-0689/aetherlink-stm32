@@ -14,8 +14,8 @@
                 "${workspaceFolder}/User/Hardware/OLED",
                 "${workspaceFolder}/User/ui/Inc",
                 "${workspaceFolder}/User/Hardware/MPU6050",
-            
-                "${workspaceFolder}/User/SensorData"
+                "${workspaceFolder}/User/SensorData",
+                "${workspaceFolder}/User/Bluetooth"
             ],
             "defines": [
                 "USE_STDPERIPH_DRIVER"
