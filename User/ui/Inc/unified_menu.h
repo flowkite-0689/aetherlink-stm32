@@ -177,6 +177,7 @@ typedef struct
     menu_event_type_t type;
     uint32_t timestamp;
     uint8_t param;
+    
 } menu_event_t;
 
 // ==================================

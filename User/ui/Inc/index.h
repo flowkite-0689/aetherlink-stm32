@@ -31,10 +31,6 @@ typedef struct {
     uint16_t year;
     char weekday[16];
     
-    // 系统状态
-    uint32_t step_count;        // 步数
-    uint8_t step_active;        // 步数激活状态
-    
     // 滚动状态
     uint8_t scroll_offset;      // 滚动偏移量(0或64)
     uint8_t scroll_direction;   // 滚动方向(0=无,1=右,2=左)

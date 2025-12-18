@@ -37,8 +37,6 @@ menu_item_t *index_init(void)
     memset(&g_index_state, 0, sizeof(index_state_t));
     g_index_state.need_refresh = 1;
     g_index_state.last_update = xTaskGetTickCount();
-    g_index_state.step_count = 0;
-    g_index_state.step_active = 0;
     g_index_state.scroll_offset = 64;
     g_index_state.scroll_direction = 0;
     g_index_state.scroll_step = 0;
