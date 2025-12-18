@@ -10,7 +10,6 @@
 #include <task.h>
 
 typedef struct {
-    DHT11_Data_TypeDef  dht11_data;
     PhotoRes_TypeDef    light_data;
 
 } SensorData_TypeDef;
@@ -20,10 +19,8 @@ extern SensorData_TypeDef SensorData;
 extern uint16_t Sensordata_delaytime; // 传感器读取间隔时间
 
 
-extern uint8_t DHT11_ON;
 extern uint8_t Light_ON;
 
-extern uint8_t DHT11_ERR;
 extern uint8_t Light_ERR;
 
 

@@ -5,16 +5,12 @@
 #include "stm32f10x_gpio.h"
 
 static TaskHandle_t sensordate_handle = NULL;
-uint8_t DHT11_ON = 1;
 uint8_t Light_ON = 1;
-
-uint8_t DHT11_ERR = 0 ;
 uint8_t Light_ERR = 0 ;
 SensorData_TypeDef SensorData;
  uint16_t Sensordata_delaytime = 3000;
 void SensorData_Init(void)
 {
-    DHT11_Init();
     Light_ADC_Init(); // ADC1 初始化用于光照传感器
 }
 
@@ -27,18 +23,6 @@ static void SensorData_Task(void *pvParameters)
 
     while (1)
     {
-       
-        if (DHT11_ON)
-        {
-            taskENTER_CRITICAL();
-            Read_DHT11(&SensorData.dht11_data);
-            if (SensorData.dht11_data.temp_deci==0&&SensorData.dht11_data.humi_int==0&&SensorData.dht11_data.temp_int==0)
-            {
-                DHT11_ERR=1;
-            }
-            
-            taskEXIT_CRITICAL();
-        }
 
         // 读取光照强度数据
         // 配置ADC通道1 (PA1) 用于光照传感器

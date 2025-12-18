@@ -287,14 +287,6 @@ static void index_display_time_info(void)
         {
             OLED_Clear_Rect(32, 0, 62, 32);
         }
-        if (DHT11_ON && !DHT11_ERR)
-        {
-            OLED_ShowPicture(-64 + x_offset, 32, 32, 32, gImage_TandH, 1);
-        }
-        else
-        {
-            OLED_Clear_Rect(0, 32, 32, 64);
-        }
         
 
         OLED_Refresh_Dirty();
@@ -323,21 +315,6 @@ static void index_display_time_info(void)
 
     if (x_offset == 0)
     {
-        if (DHT11_ON && !DHT11_ERR)
-        {
-
-            OLED_Printf(64, 0, " T : %2d.%1d",
-                        SensorData.dht11_data.temp_int,
-                        SensorData.dht11_data.temp_deci);
-            OLED_Printf(64, 16, " H : %2d",
-                        SensorData.dht11_data.humi_int);
-        }
-        else
-        {
-            OLED_Printf(64, 0, " T : %s", DHT11_ERR ? "ERR" : "OFF");
-
-            OLED_Printf(64, 16, " H : %s", DHT11_ERR ? "ERR" : "OFF");
-        }
         // light
         if (Light_ON && !Light_ERR)
         {
