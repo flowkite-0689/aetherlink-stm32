@@ -76,8 +76,6 @@ typedef struct menu_item
 
     // 状态信息
     uint8_t is_selected; // 是否选中
-    uint8_t is_visible;  // 是否可见
-    uint8_t is_enabled;  // 是否启用
 
     // 回调函数
     void (*on_enter)(struct menu_item *item);            // 进入时回调

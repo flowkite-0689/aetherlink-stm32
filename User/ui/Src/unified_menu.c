@@ -111,8 +111,7 @@ menu_item_t *menu_item_create(const char *name, menu_type_t type, menu_content_t
 
     // 设置默认状态
     item->is_selected = 0;
-    item->is_visible = 1;
-    item->is_enabled = 1;
+
 
     // 设置默认关系
     item->parent = NULL;

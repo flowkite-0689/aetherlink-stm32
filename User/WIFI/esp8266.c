@@ -262,8 +262,7 @@ uint8_t ESP8266_Parse_Command(const char *buffer, const char *topic, char *msg_v
         i++;
     }
     msg_value[i] = '\0';
-    
-    // printf("Extracted msg_value: %s\r\n", msg_value);  // 添加调试信息
+ 
     
     return 1;
 }
@@ -283,24 +282,7 @@ uint8_t ESP8266_Process_Sensor_Commands(const char *buffer)
     
     char msg_value[32] = {0};
     
-    // // 处理DHT11传感器
-    // if (ESP8266_Parse_Command(buffer, "mydht004", msg_value)) {
-    //     printf("Found DHT11 topic, msg_value: %s\r\n", msg_value);  // 添加调试信息
-        
-        
-    //     if (strcmp(msg_value, "on") == 0) {
-    //         DHT11_ON = 1;
-    //         printf("DHT11 sensor turned ON via remote command, current status: %d\r\n", DHT11_ON);
-    //         return 1;
-    //     } else if (strcmp(msg_value, "off") == 0) {
-    //         DHT11_ON = 0;
-    //         printf("DHT11 sensor turned OFF via remote command, current status: %d\r\n", DHT11_ON);
-    //         return 1;
-    //     } else {
-    //         printf("Invalid msg_value: '%s'\r\n", msg_value);
-    //     }
-    //     return 1; // 确保即使msg值不匹配也返回
-    // }
+  
     
     // 处理Light传感器
     if (ESP8266_Parse_Command(buffer, "myLUX004", msg_value)) {
@@ -318,19 +300,7 @@ uint8_t ESP8266_Process_Sensor_Commands(const char *buffer)
         return 1; // 确保即使msg值不匹配也返回
     }
     
-    // 处理PM2.5传感器
-    // if (ESP8266_Parse_Command(buffer, "myMP25004", msg_value)) {
-    //     extern uint8_t PM25_ON;
-    //     if (strcmp(msg_value, "on") == 0) {
-    //         PM25_ON = 1;
-    //         printf("PM25 sensor turned ON via remote command\r\n");
-    //         return 1;
-    //     } else if (strcmp(msg_value, "off") == 0) {
-    //         PM25_ON = 0;
-    //         printf("PM25 sensor turned OFF via remote command\r\n");
-    //         return 1;
-    //     }
-    // }
+  
     
     return 0;
 }
