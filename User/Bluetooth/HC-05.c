@@ -470,14 +470,25 @@ uint8_t HC05_Send_String(char *str)
 }
 
 /**
+ * @brief  HC-05获取连接状态（检查是否有数据传输）
+ * @param  None
+ * @retval HC05_STATUS_CONNECTED: 已连接, HC05_STATUS_DISCONNECTED: 未连接
+ */
+uint8_t HC05_Check_Connection_By_Data(void)
+{
+    // 简单的连接检测：如果接收到数据就认为已连接
+    // HC-05蓝牙模块连接后不会发送CONNECT字符串
+    // 只要有数据传输就说明连接成功
+    return hc05_connection_status;
+}
+
+/**
  * @brief  获取HC-05连接状态
  * @retval HC05_STATUS_CONNECTED: 已连接, HC05_STATUS_DISCONNECTED: 未连接
  */
 uint8_t HC05_Get_Status(void)
 {
-    // 每次获取状态时检查连接状态
-    HC05_Check_Connection();
-    return hc05_connection_status;
+    return HC05_Check_Connection_By_Data();
 }
 
 /**
@@ -490,16 +501,14 @@ uint8_t HC05_Check_Connection(void)
     // 检查接收缓冲区中的连接状态信息
     if(uart3_rx_len > 0)
     {
-        char *buffer = (char*)uart3_buffer;
+        // 有数据接收说明已经连接（HC-05连接后不会发送CONNECT字符串）
+        // 只要接收到数据就认为连接成功
+        hc05_connection_status = HC05_STATUS_CONNECTED;
         
-        // 检查连接成功标识
-        if(strstr(buffer, "CONNECT") != NULL)
-        {
-            hc05_connection_status = HC05_STATUS_CONNECTED;
-        }
         // 检查断开连接标识
-        else if(strstr(buffer, "DISCONNECT") != NULL || 
-                strstr(buffer, "ERROR") != NULL)
+        char *buffer = (char*)uart3_buffer;
+        if(strstr(buffer, "DISCONNECT") != NULL || 
+           strstr(buffer, "ERROR") != NULL)
         {
             hc05_connection_status = HC05_STATUS_DISCONNECTED;
         }
@@ -515,7 +524,7 @@ uint8_t HC05_Check_Connection(void)
 void HC05_Receive_Start(void)
 {
     // UART3的DMA接收已经在外设初始化中启动
-    // 这里可以添加额外的处理逻辑
+    // 这里不需要额外操作
 }
 
 /**

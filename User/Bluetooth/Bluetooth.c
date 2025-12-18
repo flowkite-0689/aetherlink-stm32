@@ -23,7 +23,7 @@ uint8_t Bluetooth_Init(uint32_t baudrate)
 {
     printf("Initializing Bluetooth on UART3...\r\n");
     
-    // 初始化HC-05蓝牙模块 - 只初始化UART3，不发送AT指令
+    // 初始化HC-05蓝牙模块 - 只初始化UART3
     if(HC05_Init(baudrate) != BLUETOOTH_OK)
     {
         printf("HC-05 initialization failed\r\n");
@@ -33,8 +33,7 @@ uint8_t Bluetooth_Init(uint32_t baudrate)
     // 启动数据接收
     HC05_Receive_Start();
     
-    bluetooth_status = BLUETOOTH_STATUS_DISCONNECTED;
-    printf("Bluetooth initialization complete - ready for connection\r\n");
+    printf("Bluetooth initialized - waiting for connection\r\n");
     
     return BLUETOOTH_OK;
 }
@@ -49,60 +48,17 @@ void Bluetooth_Process_Task(void)
     // 检查是否有数据接收
     if(uart3_rx_len > 0)
     {
-        // 复制接收到的数据
-        if(uart3_rx_len <= BLUETOOTH_RX_BUFFER_SIZE)
+        // 打印接收到的数据
+        printf("Bluetooth received %d bytes: ", uart3_rx_len);
+        for(uint16_t i = 0; i < uart3_rx_len; i++)
         {
-            memcpy(bluetooth_rx_buffer, uart3_buffer, uart3_rx_len);
-            bluetooth_rx_len = uart3_rx_len;
-            
-            // 打印接收到的数据
-            printf("Bluetooth received %d bytes: ", bluetooth_rx_len);
-            for(uint16_t i = 0; i < bluetooth_rx_len; i++)
-            {
-                printf("%c", bluetooth_rx_buffer[i]);
-            }
-            printf("\r\n");
-            
-            // 处理蓝牙命令
-            HC05_Process_Commands((char*)bluetooth_rx_buffer);
-            
-            // 清空UART3接收缓冲区
-            memset(uart3_buffer, 0, UART3_BUF_SIZE);
-            uart3_rx_len = 0;
+            printf("%c", uart3_buffer[i]);
         }
-        else
-        {
-            // 数据过长，清空缓冲区
-            printf("Bluetooth data overflow, cleared\r\n");
-            memset(uart3_buffer, 0, UART3_BUF_SIZE);
-            uart3_rx_len = 0;
-        }
-    }
-    
-    // 检查蓝牙连接状态
-    uint8_t current_status = HC05_Get_Status();
-    if(current_status == HC05_STATUS_CONNECTED && 
-       bluetooth_status == BLUETOOTH_STATUS_DISCONNECTED)
-    {
-        bluetooth_status = BLUETOOTH_STATUS_CONNECTED;
-        printf("Bluetooth connected - Ready for communication\r\n");
-    }
-    else if(current_status == HC05_STATUS_DISCONNECTED && 
-            bluetooth_status == BLUETOOTH_STATUS_CONNECTED)
-    {
-        bluetooth_status = BLUETOOTH_STATUS_DISCONNECTED;
-        printf("Bluetooth disconnected - Waiting for connection\r\n");
-    }
-    else if(bluetooth_status == BLUETOOTH_STATUS_DISCONNECTED)
-    {
-        // 定期显示等待连接状态（每10秒显示一次）
-        static uint32_t last_status_time = 0;
-        uint32_t current_time = xTaskGetTickCount();
-        if((current_time - last_status_time) > pdMS_TO_TICKS(10000))
-        {
-            printf("Bluetooth waiting for connection...\r\n");
-            last_status_time = current_time;
-        }
+        printf("\r\n");
+        
+        // 清空接收缓冲区
+        memset(uart3_buffer, 0, UART3_BUF_SIZE);
+        uart3_rx_len = 0;
     }
 }
 

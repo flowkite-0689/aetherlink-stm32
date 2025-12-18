@@ -73,24 +73,16 @@ int main(void)
 
     BEEP_Buzz(10);
 
-    OLED_Printf_Line(0, "STM32F103C8T6");
-    OLED_Printf_Line(1, "FreeRTOS V20221201");
-    OLED_Printf_Line(2, "fengwuheng");
-    OLED_Printf_Line(3, "v1.0.0");
-
     printf("\r\n==================================\r\n");
     printf("||     STM32F103C8T6   \t\t||\r\n");
     printf("||     FreeRTOS V20221201   \t||\r\n");
     printf("||     fengwuheng   \t\t||\r\n");
     printf("||     v1.0.0   \t\t||\r\n");
     printf("=====================================\r\n");
-    // 读取设备ID寄存器
-  uint32_t device_id = *(uint32_t*)0xE0042000;
-
+ 
   // 读取Flash大小寄存器 (0x1FFFF7E22)
   uint16_t flash_size = *((uint16_t*)0x1FFFF7E0);
 
-  printf("Device ID: 0x%08X\n", device_id);
   printf("Flash Size: %d KB\n", flash_size);
     Light_ADC_Init();
     printf("Light_ADC_Init OK\n");
