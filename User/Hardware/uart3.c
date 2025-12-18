@@ -34,15 +34,19 @@ static void UART3_Init(uint32_t baudrate)
     USART_InitStruct.USART_Mode                = USART_Mode_Rx | USART_Mode_Tx;
     USART_Init(USART3, &USART_InitStruct);
 
+    // 启用接收中断和IDLE中断
+    USART_ITConfig(USART3, USART_IT_RXNE, ENABLE);
     USART_ITConfig(USART3, USART_IT_IDLE, ENABLE);
 
     NVIC_InitStruct.NVIC_IRQChannel                   = USART3_IRQn;
-    NVIC_InitStruct.NVIC_IRQChannelPreemptionPriority = 6;
+    NVIC_InitStruct.NVIC_IRQChannelPreemptionPriority = 0;
     NVIC_InitStruct.NVIC_IRQChannelSubPriority        = 0;
     NVIC_InitStruct.NVIC_IRQChannelCmd                = ENABLE;
     NVIC_Init(&NVIC_InitStruct);
 
     USART_Cmd(USART3, ENABLE);
+    
+    printf("UART3 initialized with baudrate: %d\r\n", baudrate);
 }
 
 static void UART3_DMA_Init(void)
@@ -50,7 +54,8 @@ static void UART3_DMA_Init(void)
     DMA_InitTypeDef DMA_InitStruct;
     RCC_AHBPeriphClockCmd(RCC_AHBPeriph_DMA1, ENABLE);
 
-    DMA_DeInit(DMA1_Channel2);
+    // 正确配置：UART3_RX使用DMA1_Channel3
+    DMA_DeInit(DMA1_Channel3);
     DMA_InitStruct.DMA_PeripheralBaseAddr = (uint32_t)&USART3->DR;
     DMA_InitStruct.DMA_MemoryBaseAddr     = (uint32_t)uart3_buffer;
     DMA_InitStruct.DMA_DIR                = DMA_DIR_PeripheralSRC;
@@ -62,25 +67,46 @@ static void UART3_DMA_Init(void)
     DMA_InitStruct.DMA_Mode               = DMA_Mode_Circular;
     DMA_InitStruct.DMA_Priority           = DMA_Priority_Medium;
     DMA_InitStruct.DMA_M2M                = DMA_M2M_Disable;
-    DMA_Init(DMA1_Channel2, &DMA_InitStruct);
+    DMA_Init(DMA1_Channel3, &DMA_InitStruct);
 
-    DMA_Cmd(DMA1_Channel2, ENABLE);
+    DMA_Cmd(DMA1_Channel3, ENABLE);
     USART_DMACmd(USART3, USART_DMAReq_Rx, ENABLE);
 }
 
 void USART3_IRQHandler(void)
 {
     uint32_t temp;
+    
+    // 处理RXNE中断（接收数据寄存器非空）
+    if (USART_GetITStatus(USART3, USART_IT_RXNE) != RESET)
+    {
+        // 读取数据以清除RXNE标志
+        temp = USART_ReceiveData(USART3);
+        (void)temp;
+        USART_ClearITPendingBit(USART3, USART_IT_RXNE);
+    }
+    
+    // 处理IDLE中断（线路空闲）
     if (USART_GetITStatus(USART3, USART_IT_IDLE) != RESET)
     {
+        // 清除IDLE中断标志位（重要！）
         temp = USART3->SR;
         temp = USART3->DR;
         (void)temp;
 
-        DMA_Cmd(DMA1_Channel2, DISABLE);
-        uart3_rx_len = UART3_BUF_SIZE - DMA_GetCurrDataCounter(DMA1_Channel2);
-        DMA_SetCurrDataCounter(DMA1_Channel2, UART3_BUF_SIZE);
-        DMA_Cmd(DMA1_Channel2, ENABLE);
+        DMA_Cmd(DMA1_Channel3, DISABLE);
+        uart3_rx_len = UART3_BUF_SIZE - DMA_GetCurrDataCounter(DMA1_Channel3);
+        DMA_SetCurrDataCounter(DMA1_Channel3, UART3_BUF_SIZE);
+        DMA_Cmd(DMA1_Channel3, ENABLE);
+        
+        // 清除IDLE中断标志位
+        USART_ClearITPendingBit(USART3, USART_IT_IDLE);
+        
+        // 调试信息
+        if (uart3_rx_len > 0)
+        {
+            printf("UART3 IDLE Interrupt: Received %d bytes\r\n", uart3_rx_len);
+        }
     }
 }
 

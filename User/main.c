@@ -56,8 +56,10 @@ int main(void)
     // 初始化UART2，用于ESP8266通信
     UART2_DMA_RX_Init(115200);
 
-    
+    // 添加蓝牙调试信息
     printf("UART3 (Bluetooth) DMA+IDLE initialization complete\r\n");
+    printf("UART3 Buffer address: %p, Size: %d\r\n", uart3_buffer, UART3_BUF_SIZE);
+    printf("Bluetooth task created with priority 2\r\n");
 
     // 读取Flash大小寄存器 (0x1FFFF7E22)
     uint16_t flash_size = *((uint16_t *)0x1FFFF7E0);
@@ -162,26 +164,25 @@ static void Bluetooth_Main_Task(void *pvParameters)
 {
     printf("Bluetooth_Main_Task start ->\n");
 
-    // 初始化蓝牙模块（如果main中没有初始化）
-    // if(Bluetooth_Init(9600) != BLUETOOTH_OK)
-    // {
-    //     printf("Bluetooth initialization failed in task\r\n");
-    //     vTaskDelete(NULL);
-    //     return;
-    // }
-
     // 蓝牙任务主循环
     while (1)
     {
-//   UART3_SendDataToBLE_Poll("hello\n",sizeof("hello\n"));
-        // HC05_Send_String("hello\n");
         if (uart3_rx_len > 0)
         {
-            uart3_rx_len = 0;
+            // 打印接收到的数据
             printf("HC-05 Receive Data: %s\r\n", uart3_buffer); 
-
             
+            // 处理蓝牙命令
+            if (HC05_Process_Commands((const char*)uart3_buffer) == HC05_OK)
+            {
+                printf("Command processed successfully\r\n");
+            }
+            
+            // 清空缓冲区
+            memset(uart3_buffer, 0, UART3_BUF_SIZE);
+            uart3_rx_len = 0;
         }
+        
         // 延时10ms
         vTaskDelay(pdMS_TO_TICKS(10));
     }
