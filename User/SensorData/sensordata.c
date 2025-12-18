@@ -7,11 +7,9 @@
 static TaskHandle_t sensordate_handle = NULL;
 uint8_t DHT11_ON = 1;
 uint8_t Light_ON = 1;
-uint8_t PM25_ON = 1;
 
 uint8_t DHT11_ERR = 0 ;
 uint8_t Light_ERR = 0 ;
-uint8_t PM25_ERR = 0 ;
 SensorData_TypeDef SensorData;
  uint16_t Sensordata_delaytime = 3000;
 void SensorData_Init(void)

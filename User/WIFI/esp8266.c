@@ -323,18 +323,18 @@ uint8_t ESP8266_Process_Sensor_Commands(const char *buffer)
     }
     
     // 处理PM2.5传感器
-    if (ESP8266_Parse_Command(buffer, "myMP25004", msg_value)) {
-        extern uint8_t PM25_ON;
-        if (strcmp(msg_value, "on") == 0) {
-            PM25_ON = 1;
-            printf("PM25 sensor turned ON via remote command\r\n");
-            return 1;
-        } else if (strcmp(msg_value, "off") == 0) {
-            PM25_ON = 0;
-            printf("PM25 sensor turned OFF via remote command\r\n");
-            return 1;
-        }
-    }
+    // if (ESP8266_Parse_Command(buffer, "myMP25004", msg_value)) {
+    //     extern uint8_t PM25_ON;
+    //     if (strcmp(msg_value, "on") == 0) {
+    //         PM25_ON = 1;
+    //         printf("PM25 sensor turned ON via remote command\r\n");
+    //         return 1;
+    //     } else if (strcmp(msg_value, "off") == 0) {
+    //         PM25_ON = 0;
+    //         printf("PM25 sensor turned OFF via remote command\r\n");
+    //         return 1;
+    //     }
+    // }
     
     return 0;
 }

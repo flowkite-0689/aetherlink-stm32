@@ -23,7 +23,6 @@ QueueHandle_t keyQueue; // 按键队列
 // 验证传感器状态变量的可访问性
 extern uint8_t DHT11_ON;
 extern uint8_t Light_ON; 
-extern uint8_t PM25_ON;
 
 static TaskHandle_t Menu_handle = NULL;
 static TaskHandle_t Key_handle = NULL;
@@ -131,7 +130,7 @@ int main(void)
     printf("SensorData task created\n");
     
     // 打印传感器初始状态
-    printf("Initial sensor states: DHT11=%d, Light=%d, PM25=%d\n", DHT11_ON, Light_ON, PM25_ON);
+    printf("Initial sensor states: DHT11=%d, Light=%d\n", DHT11_ON, Light_ON);
 
     // // 创建ESP8266任务
     // xTaskCreate((TaskFunction_t)ESP8266_Main_Task, /* 任务函数 */
@@ -523,8 +522,8 @@ static void ESP8266_Main_Task(void *pvParameters)
             // 使用新的统一消息解析函数处理传感器命令
             uint8_t result = ESP8266_Process_Sensor_Commands((const char *)uart2_buffer);
             if (result == 1) {
-                printf("Command processed successfully. Current sensor states: DHT11=%d, Light=%d, PM25=%d\r\n", 
-                       DHT11_ON, Light_ON, PM25_ON);
+                printf("Command processed successfully. Current sensor states: DHT11=%d, Light=%d\r\n", 
+                       DHT11_ON, Light_ON);
             } else {
                 printf("No matching sensor command found\r\n");
             }
