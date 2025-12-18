@@ -3,7 +3,7 @@
 
 #include "stm32f10x.h"
 #include <stdint.h>
-
+#include "sensordata.h"
 // HC-05状态定义
 #define HC05_STATUS_DISCONNECTED   0
 #define HC05_STATUS_CONNECTED      1

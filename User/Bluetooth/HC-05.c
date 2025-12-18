@@ -580,23 +580,23 @@ uint8_t HC05_Parse_Command(const char *buffer, const char *topic, char *msg_valu
  */
 uint8_t HC05_Process_Commands(const char *buffer)
 {
-    // 解析LED控制命令
+  
+    // 解析命令
     char msg_value[64];
     
-    if(HC05_Parse_Command(buffer, "LED", msg_value) == HC05_OK)
-    {
-        if(strstr(msg_value, "ON") != NULL)
+    //接收light:get回复数据
+    if(HC05_Parse_Command(buffer, "light", msg_value) == HC05_OK)
+    { 
+        if (strcmp("get",msg_value)==0)
         {
-            // 打开LED
-            GPIO_WriteBit(GPIOC, GPIO_Pin_13, Bit_RESET);
+            printf("light: %d\r\n",SensorData.light_data.lux);
+            // 只调用一次uart3_printf
+            uart3_printf("light: %d\r\n",SensorData.light_data.lux);
+            return HC05_OK;  // 添加返回成功标志
         }
-        else if(strstr(msg_value, "OFF") != NULL)
-        {
-            // 关闭LED
-            GPIO_WriteBit(GPIOC, GPIO_Pin_13, Bit_SET);
-        }
-        return HC05_OK;
+        
     }
+   
     
     // 解析其他命令...
     

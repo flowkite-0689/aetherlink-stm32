@@ -41,8 +41,6 @@ int main(void)
     debug_init();
     OLED_Init();
     HC05_Init(115200);
-    HC05_Send_String("test1\n");
-    HC05_Send_String("AT\r\n");
     OLED_Show_many_Tupian(tjbg, 8, 1);
 
     // if(HC05_Send_AT_Cmd("AT\r\n", "OK", 1000))

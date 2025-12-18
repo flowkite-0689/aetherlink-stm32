@@ -131,3 +131,37 @@ uint8_t UART3_SendDataToBLE_Poll(uint8_t *data, uint16_t len)
     while (USART_GetFlagStatus(USART3, USART_FLAG_TC) == RESET);
     return 0;
 }
+
+/* UART3 printf函数实现 */
+int uart3_printf(const char *format, ...)
+{
+    va_list args;
+    char buffer[UART3_BUF_SIZE];
+    int len;
+    
+    // 解析可变参数
+    va_start(args, format);
+    len = vsnprintf(buffer, sizeof(buffer), format, args);
+    va_end(args);
+    
+    // 检查格式化结果
+    if (len < 0)
+    {
+        return -1; // 格式化错误
+    }
+    
+    // 检查缓冲区是否足够大
+    if (len >= (int)sizeof(buffer))
+    {
+        len = sizeof(buffer) - 1; // 截断到缓冲区大小
+        buffer[len] = '\0';       // 确保字符串终止
+    }
+    
+    // 通过UART3发送数据
+    if (UART3_SendDataToBLE_Poll((uint8_t*)buffer, len) != 0)
+    {
+        return -1; // 发送失败
+    }
+    
+    return len; // 返回实际发送的字符数
+}
