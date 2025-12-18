@@ -283,28 +283,24 @@ uint8_t ESP8266_Process_Sensor_Commands(const char *buffer)
     
     char msg_value[32] = {0};
     
-    // 处理DHT11传感器
-    if (ESP8266_Parse_Command(buffer, "mydht004", msg_value)) {
-        printf("Found DHT11 topic, msg_value: %s\r\n", msg_value);  // 添加调试信息
-        extern uint8_t DHT11_ON;
-        // printf("Before change - DHT11_ON = %d\r\n", DHT11_ON);  // 修改变量前的值
-        // printf("Comparing msg_value: '%s' with 'on' and 'off'\r\n", msg_value);
-        // printf("strcmp(msg_value, \"on\") = %d\r\n", strcmp(msg_value, "on"));
-        // printf("strcmp(msg_value, \"off\") = %d\r\n", strcmp(msg_value, "off"));
+    // // 处理DHT11传感器
+    // if (ESP8266_Parse_Command(buffer, "mydht004", msg_value)) {
+    //     printf("Found DHT11 topic, msg_value: %s\r\n", msg_value);  // 添加调试信息
         
-        if (strcmp(msg_value, "on") == 0) {
-            DHT11_ON = 1;
-            printf("DHT11 sensor turned ON via remote command, current status: %d\r\n", DHT11_ON);
-            return 1;
-        } else if (strcmp(msg_value, "off") == 0) {
-            DHT11_ON = 0;
-            printf("DHT11 sensor turned OFF via remote command, current status: %d\r\n", DHT11_ON);
-            return 1;
-        } else {
-            printf("Invalid msg_value: '%s'\r\n", msg_value);
-        }
-        return 1; // 确保即使msg值不匹配也返回
-    }
+        
+    //     if (strcmp(msg_value, "on") == 0) {
+    //         DHT11_ON = 1;
+    //         printf("DHT11 sensor turned ON via remote command, current status: %d\r\n", DHT11_ON);
+    //         return 1;
+    //     } else if (strcmp(msg_value, "off") == 0) {
+    //         DHT11_ON = 0;
+    //         printf("DHT11 sensor turned OFF via remote command, current status: %d\r\n", DHT11_ON);
+    //         return 1;
+    //     } else {
+    //         printf("Invalid msg_value: '%s'\r\n", msg_value);
+    //     }
+    //     return 1; // 确保即使msg值不匹配也返回
+    // }
     
     // 处理Light传感器
     if (ESP8266_Parse_Command(buffer, "myLUX004", msg_value)) {
@@ -634,22 +630,7 @@ static void ESP8266_Main_Task(void *pvParameters)
 
             char data[16];
             // 发布主题 :mydht004
-            if (DHT11_ON)
-            {
-                snprintf(data, sizeof(data), "on#%d.%d#%d",
-                         SensorData.dht11_data.temp_int,
-                         SensorData.dht11_data.temp_deci,
-                         SensorData.dht11_data.humi_int);
-
-                if (ESP8266_TCP_Publish("4af24e3731744508bd519435397e4ab5", "mydht004", data) != 1) // 发布主题
-                {
-                    printf("ESP8266 TCP Publish mydht004 Error\r\n");
-                }
-                else
-                {
-                    printf("ESP8266 TCP Publish mydht004 Success\r\n");
-                }
-            }
+            
             if (Light_ON)
             {
                 // 发布主题 :myLuxGet
@@ -675,8 +656,8 @@ static void ESP8266_Main_Task(void *pvParameters)
             // 使用新的统一消息解析函数处理传感器命令
             uint8_t result = ESP8266_Process_Sensor_Commands((const char *)uart2_buffer);
             if (result == 1) {
-                printf("Command processed successfully. Current sensor states: DHT11=%d, Light=%d\r\n", 
-                       DHT11_ON, Light_ON);
+                printf("Command processed successfully. Current sensor states: Light=%d\r\n", 
+                        Light_ON);
             } else {
                 printf("No matching sensor command found\r\n");
             }

@@ -21,7 +21,6 @@
 QueueHandle_t keyQueue; // 按键队列
 
 // 验证传感器状态变量的可访问性
-extern uint8_t DHT11_ON;
 extern uint8_t Light_ON;
 
 static TaskHandle_t Menu_handle = NULL;
@@ -120,7 +119,7 @@ int main(void)
     printf("SensorData task created\n");
 
     // 打印传感器初始状态
-    printf("Initial sensor states: DHT11=%d, Light=%d\n", DHT11_ON, Light_ON);
+    printf("Initial sensor states: Light=%d\n", Light_ON);
 
     // // 创建ESP8266任务
     // xTaskCreate((TaskFunction_t)ESP8266_Main_Task, /* 任务函数 */

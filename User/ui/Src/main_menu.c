@@ -10,7 +10,6 @@
 //+++++++++++++++++++++++=
 // 页面
 //++++++++++++++++++++++++=
-#include "TandH.h"
 #include "Light_page.h"
 #include "WiFiStatus.h"
 #include "ParamSetting.h"
@@ -58,13 +57,7 @@ menu_item_t *main_menu_init(void)
                             NULL,               // 选中回调（不需要特殊处理）
                             NULL);              // 按键处理
 
-    menu_item_t *TandH_page = TandH_init();
-    if (TandH_page != NULL)
-    {
-
-        TandH_page->content.custom.icon_data = gImage_TandH;
-        menu_add_child(main_menu, TandH_page);
-    }
+    
 
     menu_item_t *Light_page = Light_init();
     if (Light_page != NULL)
