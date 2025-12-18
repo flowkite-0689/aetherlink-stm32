@@ -13,25 +13,6 @@
 #include "Light_page.h"
 #include "WiFiStatus.h"
 #include "ParamSetting.h"
-// ==================================
-// 图标数组
-// ==================================
-
-const unsigned char *main_menu_icons[] = {
-    gImage_setting, // 设置
-    gImage_TandH,   // 温湿度
-    gImage_lightQD, // 光照强度
-    gImage_wifi     // WiFi状态
-};
-
-const char *main_menu_names[] = {
-    "Stopwatch",
-    "Settings",
-    "TandH_page",
-    "Flashlight",
-    "Alarm",
-    "Step Counter",
-    "Test"};
 
 // ==================================
 // 函数实现
