@@ -17,20 +17,18 @@ static uint8_t hc05_connection_status = HC05_STATUS_DISCONNECTED;
  */
 uint8_t HC05_Init(uint32_t baudrate)
 {
-    // 初始化UART3
+    // 初始化UART3 - 类似于参考代码中的USART1_Init
     UART3_DMA_RX_Init(baudrate);
     
     // 延时等待模块启动
     Delay_ms(1000);
     
-    // 尝试发送AT指令测试模块（仅在未连接状态下）
-    // 注意：如果模块已连接，AT指令不会响应，这是正常的
-    HC05_Send_AT_Cmd("AT", "OK", 500); // 短超时，不强制要求响应
+    printf("HC-05 UART3 initialized at %d baud\r\n", baudrate);
     
     // 初始化状态为未连接
     hc05_connection_status = HC05_STATUS_DISCONNECTED;
     
-    return HC05_OK; // 总是返回OK，因为连接状态是动态的
+    return HC05_OK; // 直接返回成功，不需要AT指令测试
 }
 
 /**
@@ -40,6 +38,10 @@ uint8_t HC05_Init(uint32_t baudrate)
  */
 uint8_t HC05_Set_Slave_Mode(void)
 {
+    // 清空接收缓冲区
+    memset(uart3_buffer, 0, UART3_BUF_SIZE);
+    uart3_rx_len = 0;
+    
     // 设置为从模式
     if(HC05_Send_AT_Cmd("AT+ROLE=0", "OK", 1000) == HC05_OK)
     {
@@ -48,7 +50,7 @@ uint8_t HC05_Set_Slave_Mode(void)
     }
     else
     {
-        printf("Failed to set HC-05 to slave mode\r\n");
+        printf("Failed to set HC-05 to slave mode (may already be connected)\r\n");
         return HC05_ERROR;
     }
 }
@@ -70,7 +72,7 @@ uint8_t HC05_Scan_Devices(char device_list[][32], uint8_t max_devices, uint16_t 
     uart3_rx_len = 0;
     
     // 发送查询指令
-    HC05_Send_String_Force("AT+INQ\r\n");
+    HC05_Send_String("AT+INQ\r\n");
     
     // 等待扫描结果
     start_time = xTaskGetTickCount();
@@ -122,7 +124,7 @@ uint8_t HC05_Get_Paired_Devices(char device_list[][32], uint8_t max_devices)
     uart3_rx_len = 0;
     
     // 发送查询配对设备指令
-    HC05_Send_String_Force("AT+ADCN?\r\n");
+    HC05_Send_String("AT+ADCN?\r\n");
     Delay_ms(1000);
     
     if(uart3_rx_len > 0)
@@ -318,6 +320,7 @@ uint8_t HC05_Send_AT_Cmd(const char *cmd, const char *wait_string, uint16_t time
     
     // 发送AT指令
     len = strlen(cmd);
+    printf("Sending AT command: %s\r\n", cmd);
     UART3_SendDataToBLE_Poll((uint8_t*)cmd, len);
     UART3_SendDataToBLE_Poll((uint8_t*)"\r\n", 2);
     
@@ -328,14 +331,21 @@ uint8_t HC05_Send_AT_Cmd(const char *cmd, const char *wait_string, uint16_t time
         if(uart3_rx_len > 0)
         {
             response = (char*)uart3_buffer;
+            printf("HC-05 response: %s\r\n", response);
             if(strstr(response, wait_string) != NULL)
             {
                 return HC05_OK;
+            }
+            // 检查是否返回ERROR
+            if(strstr(response, "ERROR") != NULL)
+            {
+                return HC05_ERROR;
             }
         }
         Delay_ms(10);
     }
     
+    printf("AT command timeout after %dms\r\n", timeout);
     return HC05_ERROR;
 }
 
@@ -348,8 +358,21 @@ uint8_t HC05_Set_Name(char *name)
 {
     char cmd[32];
     
+    // 清空接收缓冲区
+    memset(uart3_buffer, 0, UART3_BUF_SIZE);
+    uart3_rx_len = 0;
+    
     sprintf(cmd, "AT+NAME=%s", name);
-    return HC05_Send_AT_Cmd(cmd, "OK", 1000);
+    if(HC05_Send_AT_Cmd(cmd, "OK", 1000) == HC05_OK)
+    {
+        printf("Bluetooth name set successfully to: %s\r\n", name);
+        return HC05_OK;
+    }
+    else
+    {
+        printf("Failed to set Bluetooth name\r\n");
+        return HC05_ERROR;
+    }
 }
 
 /**
@@ -361,8 +384,21 @@ uint8_t HC05_Set_PIN(char *pin)
 {
     char cmd[16];
     
+    // 清空接收缓冲区
+    memset(uart3_buffer, 0, UART3_BUF_SIZE);
+    uart3_rx_len = 0;
+    
     sprintf(cmd, "AT+PSWD=%s", pin);
-    return HC05_Send_AT_Cmd(cmd, "OK", 1000);
+    if(HC05_Send_AT_Cmd(cmd, "OK", 1000) == HC05_OK)
+    {
+        printf("Bluetooth PIN set successfully to: %s\r\n", pin);
+        return HC05_OK;
+    }
+    else
+    {
+        printf("Failed to set Bluetooth PIN\r\n");
+        return HC05_ERROR;
+    }
 }
 
 /**
@@ -411,58 +447,25 @@ uint8_t HC05_Connect_Device(uint8_t *device_name, uint16_t timeout)
 }
 
 /**
- * @brief  HC-05发送数据（强制发送，不检查连接状态）
- * @param  data: 数据缓冲区
- * @param  len: 数据长度
- * @retval HC05_OK: 成功, HC05_ERROR: 失败
- */
-uint8_t HC05_Send_Data_Force(uint8_t *data, uint16_t len)
-{
-    // 使用UART3发送数据，不检查连接状态
-    return UART3_SendDataToBLE_Poll(data, len);
-}
-
-/**
- * @brief  HC-05发送数据
+ * @brief  HC-05发送数据（直接发送，不检查连接状态）
  * @param  data: 数据缓冲区
  * @param  len: 数据长度
  * @retval HC05_OK: 成功, HC05_ERROR: 失败
  */
 uint8_t HC05_Send_Data(uint8_t *data, uint16_t len)
 {
-    if(hc05_connection_status != HC05_STATUS_CONNECTED)
-    {
-        return HC05_ERROR;
-    }
-    
-    // 使用UART3发送数据
+    // 使用UART3发送数据，类似于参考代码中的USART_SendData
     return UART3_SendDataToBLE_Poll(data, len);
 }
 
 /**
- * @brief  HC-05发送字符串（强制发送，不检查连接状态）
- * @param  str: 字符串
- * @retval HC05_OK: 成功, HC05_ERROR: 失败
- */
-uint8_t HC05_Send_String_Force(char *str)
-{
-    // 使用UART3发送字符串，不检查连接状态
-    return UART3_SendDataToBLE_Poll((uint8_t*)str, strlen(str));
-}
-
-/**
- * @brief  HC-05发送字符串
+ * @brief  HC-05发送字符串（直接发送，不检查连接状态）
  * @param  str: 字符串
  * @retval HC05_OK: 成功, HC05_ERROR: 失败
  */
 uint8_t HC05_Send_String(char *str)
 {
-    if(hc05_connection_status != HC05_STATUS_CONNECTED)
-    {
-        return HC05_ERROR;
-    }
-    
-    // 使用UART3发送字符串
+    // 使用UART3发送字符串，类似于参考代码
     return UART3_SendDataToBLE_Poll((uint8_t*)str, strlen(str));
 }
 

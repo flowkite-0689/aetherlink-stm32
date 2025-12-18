@@ -21,26 +21,20 @@ static uint8_t bluetooth_status = BLUETOOTH_STATUS_DISCONNECTED;
  */
 uint8_t Bluetooth_Init(uint32_t baudrate)
 {
-    // 初始化HC-05蓝牙模块
+    printf("Initializing Bluetooth on UART3...\r\n");
+    
+    // 初始化HC-05蓝牙模块 - 只初始化UART3，不发送AT指令
     if(HC05_Init(baudrate) != BLUETOOTH_OK)
     {
+        printf("HC-05 initialization failed\r\n");
         return BLUETOOTH_ERROR;
     }
-    
-    // 设置为从模式（等待手机连接）
-    HC05_Set_Slave_Mode();
-    
-    // 设置蓝牙名称
-    HC05_Set_Name("STM32_HC05");
-    
-    // 设置蓝牙PIN码
-    HC05_Set_PIN("1234");
     
     // 启动数据接收
     HC05_Receive_Start();
     
     bluetooth_status = BLUETOOTH_STATUS_DISCONNECTED;
-    printf("Bluetooth initialized in slave mode, waiting for connection...\r\n");
+    printf("Bluetooth initialization complete - ready for connection\r\n");
     
     return BLUETOOTH_OK;
 }
