@@ -374,7 +374,7 @@ void menu_refresh_display(void)
         return;
     }
 
-    if (xSemaphoreTake(g_menu_sys.display_mutex, pdMS_TO_TICKS(50)) != pdTRUE)
+    if (xSemaphoreTake(g_menu_sys.display_mutex, pdMS_TO_TICKS(10)) != pdTRUE)
     {
         return;
     }

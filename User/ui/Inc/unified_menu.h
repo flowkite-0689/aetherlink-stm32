@@ -75,8 +75,6 @@ typedef struct menu_item
     struct menu_item **children; // 子菜单数组
     uint8_t child_count;         // 子菜单数量
     uint8_t selected_child;      // 选中的子项索引
-
-    
 } menu_item_t;
 
 // ==================================
@@ -199,16 +197,6 @@ menu_item_t *menu_item_create(const char *name, menu_type_t type, menu_content_t
  */
 int8_t menu_add_child(menu_item_t *parent, menu_item_t *child);
 
-/**
- * @brief 设置菜单项位置
- * @param item 菜单项
- * @param x X坐标
- * @param y Y坐标
- * @param width 宽度
- * @param height 高度
- * @return 0-成功，其他-失败
- */
-int8_t menu_item_set_position(menu_item_t *item, uint8_t x, uint8_t y, uint8_t width, uint8_t height);
 
 /**
  * @brief 设置菜单项回调函数
