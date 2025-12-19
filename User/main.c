@@ -17,6 +17,7 @@
 #include "light.h"
 #include "rtc_date.h"
 #include "sensordata.h"
+#include "LED.h"
 // 创建队列来存储按键事件
 QueueHandle_t keyQueue; // 按键队列
 
@@ -50,7 +51,9 @@ int main(void)
     // }
     OLED_Refresh();
     Key_Init();
-
+    LED_Init();
+    LED1_ON();
+    LED2_ON();
     // 初始化UART2，用于ESP8266通信
     UART2_DMA_RX_Init(115200);
 
